@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | VIPE-Wallpapers</title>
+    <title>Unity WebGL Player | VIPE-ReactMaker</title>
   </head>
   <body style="text-align: center; padding: 0; border: 0; margin: 0;background: #231F20;">
     <canvas id="unity-canvas" width=1080 height=1920 tabindex="-1"
@@ -32,13 +32,14 @@
       }
 
       createUnityInstance(document.querySelector("#unity-canvas"), {
-        dataUrl: "Build/20240327_Build_Release.data",
-        frameworkUrl: "Build/20240327_Build_Release.framework.js",
-        codeUrl: "Build/20240327_Build_Release.wasm",
+        dataUrl: "Build/Build.data",
+        frameworkUrl: "Build/Build.framework.js",
+        codeUrl: "Build/Build.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "PolygonalMind",
         productName: "VIPE-Wallpapers",
         productVersion: "0.1",
+        matchWebGLToCanvasSize: false,
         // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
         // devicePixelRatio: 1, // Uncomment this to override low DPI rendering on high DPI displays.
       });
