@@ -1,0 +1,58 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ============================================
+# PROJECT 89 PROPRIETARY ASSETS
+# ============================================
+
+# Proprietary VRM Avatars
+# Uncomment to protect custom avatars from being committed
+# public/vrm/*.vrm
+
+# Proprietary Mixamo Source Files
+# These are licensed assets - do not distribute
+src/poses/fbx/*.fbx
+src/poses/fbx/*.json
+
+# Backup folders
+*-backup-*/
+backup-*/
+
+# Build artifacts
+*.zip
+*.rar
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+Thumbs.db
+.DS_Store

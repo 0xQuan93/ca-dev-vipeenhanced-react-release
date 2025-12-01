@@ -1,0 +1,112 @@
+.app-shell {
+  min-height: 100vh;
+  background: radial-gradient(circle at 10% 20%, rgba(30, 62, 99, 0.45), transparent),
+    radial-gradient(circle at 90% 0%, rgba(156, 34, 83, 0.35), transparent),
+    #04050a;
+  color: #e6f3ff;
+  padding: 2rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+.canvas-stage {
+  width: 100%;
+  height: 70vh;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+}
+
+.panel {
+  background: rgba(8, 10, 17, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.panel header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.muted {
+  color: rgba(230, 243, 255, 0.65);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field span {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(230, 243, 255, 0.5);
+  }
+
+.field input,
+.field select {
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(17, 21, 32, 0.8);
+  color: inherit;
+}
+
+.field select {
+  appearance: none;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.actions button {
+  flex: 1 1 45%;
+}
+
+.status-card {
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: rgba(15, 19, 29, 0.9);
+  border: 1px solid rgba(0, 255, 214, 0.2);
+}
+
+.status-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: rgba(0, 255, 214, 0.7);
+}
+
+.status-message {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: rgba(230, 243, 255, 0.8);
+  }
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: 1fr;
+}
+
+  .canvas-stage {
+    height: 50vh;
+  }
+}
