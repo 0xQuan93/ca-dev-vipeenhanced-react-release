@@ -16,6 +16,7 @@ export function AIGeneratorTab() {
   const [customModelInput, setCustomModelInput] = useState('');
   const [useLimits, setUseLimits] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isLoop, setIsLoop] = useState(true);
   const [showDebug, setShowDebug] = useState(false);
   const [rawResponse, setRawResponse] = useState('');
   
@@ -76,13 +77,13 @@ export function AIGeneratorTab() {
          geminiService.setModel(selectedModel);
       }
       
-      const result = await geminiService.generatePose(prompt, useLimits, isAnimating);
+      const result = await geminiService.generatePose(prompt, useLimits, isAnimating, isLoop);
       
       if (result && (result.vrmPose || (result as any).tracks)) {
         if ((result as any).tracks) {
            setGeneratedPose((result as any)); // Store full animation data
-           await avatarManager.applyRawPose(result, 'loop'); // Play animation
-        } else {
+           await avatarManager.applyRawPose(result, isLoop ? 'loop' : 'once'); // Play animation
+        } else if (result.vrmPose) {
            setGeneratedPose(result.vrmPose);
            await avatarManager.applyRawPose({ vrmPose: result.vrmPose, expressions: result.expressions }, 'static');
         }
@@ -236,6 +237,19 @@ export function AIGeneratorTab() {
             style={{ marginLeft: '12px' }}
           />
           <label htmlFor="isAnimating" style={{ fontSize: '0.9em', cursor: 'pointer' }}>Generate Animation</label>
+
+          {isAnimating && (
+            <>
+              <input
+                type="checkbox"
+                id="isLoop"
+                checked={isLoop}
+                onChange={(e) => setIsLoop(e.target.checked)}
+                style={{ marginLeft: '12px' }}
+              />
+              <label htmlFor="isLoop" style={{ fontSize: '0.9em', cursor: 'pointer' }}>Loop</label>
+            </>
+          )}
           
           <div style={{ flex: 1 }} />
           

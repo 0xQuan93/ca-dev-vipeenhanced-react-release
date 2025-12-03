@@ -1,6 +1,4 @@
 
-import React from 'react';
-
 interface AboutModalProps {
   isOpen: boolean;
   onClose: () => void;

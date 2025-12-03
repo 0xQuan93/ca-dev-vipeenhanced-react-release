@@ -12,7 +12,7 @@ interface AppHeaderProps {
 export function AppHeader({ mode, onModeChange }: AppHeaderProps) {
   const vrmInputRef = useRef<HTMLInputElement>(null);
   const [showAbout, setShowAbout] = useState(false);
-  const { currentUrl, setFileSource, sourceLabel, reset } = useAvatarSource();
+  const { currentUrl, setFileSource, sourceLabel } = useAvatarSource();
   const isAvatarReady = useReactionStore((state) => state.isAvatarReady);
 
   const handleVRMUpload = (event: React.ChangeEvent<HTMLInputElement>) => {

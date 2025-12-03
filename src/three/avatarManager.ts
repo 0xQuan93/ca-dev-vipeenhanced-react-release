@@ -153,7 +153,8 @@ class AvatarManager {
         
         // Manual fallback/enforcement: Apply directly to bone nodes
         // This ensures that even if setPose decides to ignore something, we force it
-        if (this.vrm.humanoid.getNormalizedBoneNode) {
+        // Check if getNormalizedBoneNode exists on the humanoid object (VRM 0.0 vs 1.0)
+        if (this.vrm.humanoid && typeof this.vrm.humanoid.getNormalizedBoneNode === 'function') {
           Object.entries(poseData.vrmPose).forEach(([boneName, data]: [string, any]) => {
             const node = this.vrm!.humanoid!.getNormalizedBoneNode(boneName as VRMHumanBoneName);
             if (node && data.rotation) {
@@ -175,7 +176,8 @@ class AvatarManager {
         console.log('[AvatarManager] Applying expressions:', poseData.expressions);
         
         // Reset expression manager to neutral
-        if (this.vrm.expressionManager.setValue) {
+        // Check if setValue exists (it should, but safety first)
+        if (this.vrm.expressionManager && typeof this.vrm.expressionManager.setValue === 'function') {
            // We can't iterate all possible keys easily in VRM 0.0 without accessing the full preset map,
            // but we can try to reset common ones.
            // Better approach: just overwrite.

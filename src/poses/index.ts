@@ -44,7 +44,7 @@ const poseLibrary: Record<PoseId, PoseDefinition> = {
   'silly-agent': sillyAgent as PoseDefinition,
   'victory-celebration': victoryCelebration as PoseDefinition,
   'simple-wave': simpleWave as PoseDefinition,
-  'point': point as PoseDefinition,
+  'point': point as unknown as PoseDefinition,
 };
 
 /**

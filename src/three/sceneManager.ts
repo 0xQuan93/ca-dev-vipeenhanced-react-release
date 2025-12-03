@@ -62,7 +62,7 @@ class SceneManager {
     window.addEventListener('resize', this.handleResize);
     this.startLoop();
 
-    applyBackground(this.scene, 'midnight');
+    applyBackground(this.scene, 'midnight' as BackgroundId);
     
     // Apply initial aspect ratio after a short delay to ensure canvas is in DOM
     setTimeout(() => {

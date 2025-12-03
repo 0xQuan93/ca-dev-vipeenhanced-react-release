@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { sceneManager } from '../../three/sceneManager';
 import { backgroundOptions } from '../../three/backgrounds';
+import type { BackgroundId } from '../../types/reactions';
 
 type AspectRatio = '16:9' | '1:1' | '9:16';
 
@@ -17,7 +18,7 @@ export function SceneTab() {
 
   const handleBackgroundSelect = async (backgroundId: string) => {
     setSelectedBackground(backgroundId);
-    await sceneManager.setBackground(backgroundId);
+    await sceneManager.setBackground(backgroundId as BackgroundId);
   };
 
   const handleAspectRatioChange = (ratio: AspectRatio) => {

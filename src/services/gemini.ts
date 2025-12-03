@@ -150,11 +150,22 @@ Supported bones: SAME AS POSE SYSTEM (hips, spine, rightUpperArm, etc).
 For rotation tracks, use type "quaternion".
 For position tracks, use type "vector" (only for hips).
 
-IMPORTANT:
-1. Interpolate smoothly between keyframes.
-2. Ensure the loop is seamless if implied (start pose ~= end pose).
-3. Use reasonable duration (e.g. 1-4 seconds for a loop).
-4. Output raw JSON only.
+CRITICAL ANIMATION GUIDELINES:
+1. Interpolation: Use smooth transitions. The "times" array must have at least 3 keyframes (start, middle, end) for simple moves, more for complex ones.
+2. Natural Motion: 
+   - Move multiple bones (e.g., if arm moves, adjust spine/shoulder slightly).
+   - Avoid robotic linear movement.
+   - For "breathing" or "idle", use subtle sine-wave motions on chest/spine.
+3. Looping vs One-Shot:
+   - If the request implies a LOOP (e.g. "dance", "idle", "walk"): Ensure the start values (time=0) and end values (time=duration) are IDENTICAL for all tracks.
+   - If One-Shot (e.g. "jump", "fall"): Start from T-pose or neutral, execute action, and hold or return to neutral.
+4. Timing:
+   - Fast actions (punch): 0.5 - 1.0s.
+   - Slow actions (idle): 2.0 - 4.0s.
+5. Quaternion Math: Ensure quaternions are normalized.
+6. Hips Position: Use "hips.position" to move the entire body (e.g. jumping up/down). Default Y is ~0.85.
+
+Output raw JSON only.
 `;
 
 export class GeminiService {
@@ -372,7 +383,7 @@ export class GeminiService {
     return newPose as VRMPose;
   }
 
-  async generatePose(prompt: string, useLimits = true, isAnimation = false): Promise<{ vrmPose?: VRMPose; tracks?: any[]; expressions?: Record<string, number>; rawJson: string } | null> {
+  async generatePose(prompt: string, useLimits = true, isAnimation = false, isLoop = true): Promise<{ vrmPose?: VRMPose; tracks?: any[]; expressions?: Record<string, number>; rawJson: string } | null> {
     if (!this.model) {
       throw new Error('Gemini API not initialized. Please provide an API key.');
     }
@@ -381,7 +392,14 @@ export class GeminiService {
       const systemPrompt = isAnimation ? ANIMATION_SYSTEM_PROMPT : SYSTEM_PROMPT;
       console.log('[GeminiService] Generating with model:', this.model.model, isAnimation ? '(Animation)' : '(Pose)');
       
-      const result = await this.model.generateContent(systemPrompt + '\n\nUser Prompt: ' + prompt);
+      let fullPrompt = systemPrompt + '\n\nUser Prompt: ' + prompt;
+      if (isAnimation) {
+        fullPrompt += `\n\nAnimation Constraints:
+        - Type: ${isLoop ? 'LOOPING (Start pose MUST equal End pose)' : 'ONE-SHOT (Action sequence)'}
+        - Focus on creating a realistic, high-quality animation for a 3D humanoid.`;
+      }
+
+      const result = await this.model.generateContent(fullPrompt);
       const response = result.response;
       const text = response.text();
       

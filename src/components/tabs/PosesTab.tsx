@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { avatarManager } from '../../three/avatarManager';
-import { sceneManager } from '../../three/sceneManager';
 import { animationManager } from '../../three/animationManager';
 import { serializeAnimationClip } from '../../poses/animationClipSerializer';
 import type { VRMPose } from '@pixiv/three-vrm';
-import * as THREE from 'three';
 
 interface SavedPose {
   id: string;

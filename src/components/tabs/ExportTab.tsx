@@ -19,12 +19,12 @@ export function ExportTab({ mode = 'reactions' }: ExportTabProps) {
   const [resolution, setResolution] = useState<'720p' | '1080p' | 'square'>('1080p');
   const [includeLogo, setIncludeLogo] = useState(true);
   const [transparentBg, setTransparentBg] = useState(false);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
-
-  // Get current aspect ratio from sceneManager on mount
+  
+  // Set aspect ratio from sceneManager on mount to ensure consistent state
   useEffect(() => {
-    const currentRatio = sceneManager.getAspectRatio();
-    setAspectRatio(currentRatio);
+    // This just ensures we are aware of the current aspect ratio
+    // The actual export uses sceneManager.getAspectRatio() directly
+    sceneManager.getAspectRatio();
   }, []);
 
   const getExportDimensions = (): { width: number; height: number } => {

@@ -8,9 +8,10 @@ import { VRMLoaderPlugin, type VRM } from '@pixiv/three-vrm';
 import { getMixamoAnimation } from './getMixamoAnimation';
 import { poseFromClip } from './poseFromClip';
 import { convertAnimationToScenePaths } from './convertAnimationToScenePaths';
-import { useAvatarSource } from '../state/useAvatarSource';
 import type { PoseId } from '../types/reactions';
 import type { VRMPose } from '@pixiv/three-vrm';
+
+const DEFAULT_SCENE_ROTATION = { y: 180 };
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
@@ -50,14 +51,14 @@ type BatchPoseConfig = {
 };
 
 const batchConfigs: BatchPoseConfig[] = [
-  { id: 'dawn-runner', label: 'Dawn Runner', source: mixamoSources.dynamic, fileName: 'Male Dynamic Pose.fbx', sceneRotation: { y: 180 } },
-  { id: 'green-loom', label: 'Green Loom', source: mixamoSources.dance, fileName: 'Male Dance Pose.fbx', sceneRotation: { y: 180 } },
-  { id: 'sunset-call', label: 'Sunset Call', source: mixamoSources.standing, fileName: 'Male Standing Pose.fbx', sceneRotation: { y: 180 } },
-  { id: 'cipher-whisper', label: 'Cipher Whisper', source: mixamoSources.sitting, fileName: 'Male Sitting Pose.fbx', sceneRotation: { y: 180 } },
-  { id: 'nebula-drift', label: 'Nebula Drift', source: mixamoSources.locomotion, fileName: 'Male Locomotion Pose.fbx', sceneRotation: { y: 180 } },
-  { id: 'loom-vanguard', label: 'Loom Vanguard', source: mixamoSources.standing, fileName: 'Male Standing Pose.fbx', sceneRotation: { y: 180 } },
-  { id: 'signal-reverie', label: 'Signal Reverie', source: mixamoSources.crouch, fileName: 'Male Crouch Pose.fbx', sceneRotation: { y: 180 } },
-  { id: 'protocol-enforcer', label: 'Protocol Enforcer', source: mixamoSources.locomotion, fileName: 'Male Locomotion Pose.fbx', sceneRotation: { y: 180 } },
+  { id: 'dawn-runner' as PoseId, label: 'Dawn Runner', source: mixamoSources.dynamic, fileName: 'Male Dynamic Pose.fbx', sceneRotation: { y: 180 } },
+  { id: 'green-loom' as PoseId, label: 'Green Loom', source: mixamoSources.dance, fileName: 'Male Dance Pose.fbx', sceneRotation: { y: 180 } },
+  { id: 'sunset-call' as PoseId, label: 'Sunset Call', source: mixamoSources.standing, fileName: 'Male Standing Pose.fbx', sceneRotation: { y: 180 } },
+  { id: 'cipher-whisper' as PoseId, label: 'Cipher Whisper', source: mixamoSources.sitting, fileName: 'Male Sitting Pose.fbx', sceneRotation: { y: 180 } },
+  { id: 'nebula-drift' as PoseId, label: 'Nebula Drift', source: mixamoSources.locomotion, fileName: 'Male Locomotion Pose.fbx', sceneRotation: { y: 180 } },
+  { id: 'loom-vanguard' as PoseId, label: 'Loom Vanguard', source: mixamoSources.standing, fileName: 'Male Standing Pose.fbx', sceneRotation: { y: 180 } },
+  { id: 'signal-reverie' as PoseId, label: 'Signal Reverie', source: mixamoSources.crouch, fileName: 'Male Crouch Pose.fbx', sceneRotation: { y: 180 } },
+  { id: 'protocol-enforcer' as PoseId, label: 'Protocol Enforcer', source: mixamoSources.locomotion, fileName: 'Male Locomotion Pose.fbx', sceneRotation: { y: 180 } },
 ];
 
 function PoseLab() {
@@ -112,7 +113,7 @@ function PoseLab() {
     };
   }, []);
 
-  const loadVRM = async (file: File, options?: { syncSource?: boolean }) => {
+  const loadVRM = async (file: File, _options?: { syncSource?: boolean }) => {
     setStatus('Loading VRM…');
     
     // Dispose of old VRM if exists
@@ -422,6 +423,7 @@ function PoseLab() {
     }
   };
 
+  /*
   const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const file = event.dataTransfer.files?.[0];
@@ -434,25 +436,7 @@ function PoseLab() {
       setStatus('Unsupported file type. Drop VRM or FBX/GLTF.');
     }
   };
-
-  const runTest = async () => {
-    try {
-      setStatus('Running test: Fetching default VRM...');
-      const vrmRes = await fetch('/vrm/HarmonVox_519.vrm');
-      const vrmBlob = await vrmRes.blob();
-      const vrmFile = new File([vrmBlob], 'HarmonVox_519.vrm');
-      await loadVRM(vrmFile);
-
-      setStatus('Running test: Fetching test pose...');
-      const poseRes = await fetch('/test-pose.fbx');
-      const poseBlob = await poseRes.blob();
-      const poseFile = new File([poseBlob], 'test-pose.fbx');
-      await retarget(poseFile);
-    } catch (err) {
-      console.error(err);
-      setStatus('Test failed: ' + err);
-    }
-  };
+  */
 
   const handleVRMDrop = async (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();

@@ -1,11 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { avatarManager } from '../../three/avatarManager';
 import { getMixamoAnimation } from '../../pose-lab/getMixamoAnimation';
 import { convertAnimationToScenePaths } from '../../pose-lab/convertAnimationToScenePaths';
-import { animationManager } from '../../three/animationManager';
 import { useReactionStore } from '../../state/useReactionStore';
 
 export function AnimationsTab() {
