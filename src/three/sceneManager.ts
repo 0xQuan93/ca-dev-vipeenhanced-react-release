@@ -7,7 +7,7 @@ type TickHandler = (delta: number) => void;
 
 // Logo overlay configuration
 const LOGO_CONFIG = {
-  path: '/logo/89-logo.svg', // Project 89 logo
+  path: '/logo/poselab.svg', // PoseLab logo
   position: 'bottom-right' as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right',
   size: 0.08, // 8% of canvas width
   opacity: 0.85,
@@ -175,7 +175,7 @@ class SceneManager {
     this.controls.update();
   }
 
-  async setBackground(id: BackgroundId) {
+  async setBackground(id: BackgroundId | string) {
     if (!this.scene) return;
     await applyBackground(this.scene, id);
   }

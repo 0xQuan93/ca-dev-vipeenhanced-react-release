@@ -5,7 +5,7 @@ import App from './App.tsx'
 import PoseLab from './pose-lab/PoseLab'
 import { setupAvatarBridge } from './bridge/avatarBridge'
 
-console.log('[main] Starting Project 89 Reaction Forge');
+console.log('[main] Starting PoseLab');
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

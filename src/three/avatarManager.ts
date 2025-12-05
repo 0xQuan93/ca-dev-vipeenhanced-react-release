@@ -392,6 +392,43 @@ class AvatarManager {
     expressionMutators[expression]?.(this.vrm);
   }
 
+  /**
+   * Get list of available expressions from the loaded VRM
+   */
+  getAvailableExpressions(): string[] {
+    if (!this.vrm?.expressionManager) return [];
+    
+    // @pixiv/three-vrm handles expressions as an array of objects
+    // We can extract names from there
+    const names: string[] = [];
+    
+    // Access internal expressions array if available
+    // Note: TypeScript might complain if types aren't perfect, so we cast to any for safety
+    const manager = this.vrm.expressionManager as any;
+    
+    if (manager.expressions) {
+      manager.expressions.forEach((expr: any) => {
+        if (expr.expressionName) {
+          names.push(expr.expressionName);
+        }
+      });
+    } else if (manager._expressionMap) {
+      // Fallback for older versions
+      Object.keys(manager._expressionMap).forEach(name => names.push(name));
+    }
+    
+    return names.sort();
+  }
+
+  /**
+   * Set weight for a specific expression
+   */
+  setExpressionWeight(name: string, weight: number) {
+    if (!this.vrm?.expressionManager) return;
+    this.vrm.expressionManager.setValue(name, weight);
+    this.vrm.expressionManager.update(); // Ensure potential blends are calculated
+  }
+
   private applySceneRotation(definition: PoseDefinition) {
     const rotation = definition.sceneRotation ?? { x: 0, y: 0, z: 0 };
     this.vrm?.scene.rotation.set(

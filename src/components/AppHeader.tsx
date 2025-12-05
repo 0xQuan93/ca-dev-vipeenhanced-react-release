@@ -32,8 +32,8 @@ export function AppHeader({ mode, onModeChange }: AppHeaderProps) {
       <header className="app-header">
         <div className="app-header__left">
           <div className="app-header__logo">
-            <img src="/logo/89-logo.svg" alt="Project 89" />
-            <span>Reaction Forge</span>
+            <img src="/logo/poselab.svg" alt="PoseLab" />
+            <span>PoseLab</span>
           </div>
           <div className="mode-switch">
             <button

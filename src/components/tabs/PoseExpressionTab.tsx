@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useReactionStore } from '../../state/useReactionStore';
 import { avatarManager } from '../../three/avatarManager';
 import type { AnimationMode, ExpressionId } from '../../types/reactions';
@@ -11,21 +11,37 @@ export function PoseExpressionTab() {
   const [activeExpression, setActiveExpression] = useState<ExpressionId | 'neutral'>('neutral');
   const poseInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExpressionChange = (expr: ExpressionId | 'neutral') => {
-    setActiveExpression(expr);
-    if (!isAvatarReady) return;
-    
-    if (expr === 'neutral') {
-      // Reset all expressions
-      const vrm = avatarManager.getVRM();
-      if (vrm?.expressionManager) {
-        vrm.expressionManager.setValue('Joy', 0);
-        vrm.expressionManager.setValue('Surprised', 0);
-        vrm.expressionManager.setValue('Angry', 0);
-      }
-    } else {
-      avatarManager.applyExpression(expr);
+  // Expression State
+  const [availableExpressions, setAvailableExpressions] = useState<string[]>([]);
+  const [expressionWeights, setExpressionWeights] = useState<Record<string, number>>({});
+  const [showExpressions, setShowExpressions] = useState(false);
+
+  useEffect(() => {
+    if (isAvatarReady) {
+      // Small delay to ensure VRM is fully initialized
+      setTimeout(() => {
+        const exprs = avatarManager.getAvailableExpressions();
+        setAvailableExpressions(exprs);
+        // Initialize weights to 0
+        const weights: Record<string, number> = {};
+        exprs.forEach(name => weights[name] = 0);
+        setExpressionWeights(weights);
+      }, 500);
     }
+  }, [isAvatarReady]);
+
+  const handleExpressionChange = (name: string, value: number) => {
+    setExpressionWeights(prev => ({ ...prev, [name]: value }));
+    avatarManager.setExpressionWeight(name, value);
+  };
+
+  const handleResetExpressions = () => {
+    const newWeights: Record<string, number> = {};
+    availableExpressions.forEach(name => {
+      newWeights[name] = 0;
+      avatarManager.setExpressionWeight(name, 0);
+    });
+    setExpressionWeights(newWeights);
   };
 
   const handlePoseUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,7 +63,13 @@ export function PoseExpressionTab() {
       }
       
       setCustomPose(poseData);
-      setCustomPoseName(file.name.replace('.json', ''));
+      
+      // Clean up the name: remove extension and potential "PoseLab_" prefix
+      let cleanName = file.name.replace('.json', '');
+      if (cleanName.startsWith('PoseLab_')) {
+        cleanName = cleanName.substring(8); // Remove 'PoseLab_'
+      }
+      setCustomPoseName(cleanName);
       
       // Auto-apply the custom pose
       await avatarManager.applyRawPose(poseData, animationMode);
@@ -143,23 +165,54 @@ export function PoseExpressionTab() {
       </div>
 
       <div className="tab-section">
-        <h3>Facial Expression</h3>
-        <div className="button-group">
-          {(['neutral', 'joy', 'surprise', 'calm'] as const).map((expr) => (
-            <button
-              key={expr}
-              className={activeExpression === expr ? 'secondary active' : 'secondary'}
-              onClick={() => handleExpressionChange(expr)}
-              disabled={!isAvatarReady}
-              title={expr.charAt(0).toUpperCase() + expr.slice(1)}
-            >
-              {expr === 'neutral' && '😐'}
-              {expr === 'joy' && '😄'}
-              {expr === 'surprise' && '😲'}
-              {expr === 'calm' && '😌'}
-            </button>
-          ))}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3>Expressions</h3>
+          <button 
+            className="secondary small" 
+            onClick={() => setShowExpressions(!showExpressions)}
+            disabled={!isAvatarReady || availableExpressions.length === 0}
+          >
+            {showExpressions ? 'Hide' : 'Show'} ({availableExpressions.length})
+          </button>
         </div>
+
+        {showExpressions && (
+          <div className="expressions-panel" style={{ maxHeight: '300px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+             <button 
+              className="secondary full-width" 
+              onClick={handleResetExpressions}
+              style={{ marginBottom: '1rem' }}
+            >
+              Reset All Expressions
+            </button>
+
+            {availableExpressions.length > 0 ? (
+              <div className="expression-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem' }}>
+                {availableExpressions.map((name) => (
+                  <div key={name} className="expression-control" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <label style={{ flex: '1', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={name}>
+                      {name}
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={expressionWeights[name] || 0}
+                      onChange={(e) => handleExpressionChange(name, parseFloat(e.target.value))}
+                      style={{ flex: '2' }}
+                    />
+                    <span style={{ fontSize: '0.75rem', width: '30px', textAlign: 'right' }}>
+                      {(expressionWeights[name] || 0).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted small">No expressions found on this avatar.</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="tab-section">

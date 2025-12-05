@@ -21,13 +21,29 @@ export function AIGeneratorTab() {
   const [rawResponse, setRawResponse] = useState('');
   
   // Use environment variable for API Key
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const envApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  
+  // State for user-provided API key (for web demo)
+  const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+
+  // Effective API key
+  const apiKey = envApiKey || userApiKey;
 
   useEffect(() => {
     if (apiKey) {
       geminiService.initialize(apiKey);
     }
   }, [apiKey]);
+
+  const handleSaveKey = (key: string) => {
+    localStorage.setItem('gemini_api_key', key);
+    setUserApiKey(key);
+  };
+
+  const handleClearKey = () => {
+    localStorage.removeItem('gemini_api_key');
+    setUserApiKey('');
+  };
 
   const handleCheckModels = async () => {
     try {
@@ -140,13 +156,33 @@ export function AIGeneratorTab() {
         <div className="tab-section">
           <h3>🤖 AI Setup Required</h3>
           <p className="muted small">
-            To use the AI generator, you must add your Google Gemini API Key to a local <code>.env</code> file.
+            To use the AI generator, you need a Google Gemini API Key.
           </p>
-          <div className="code-block" style={{ background: '#00000040', padding: '12px', borderRadius: '4px', margin: '12px 0', fontFamily: 'monospace', fontSize: '0.9em' }}>
-            VITE_GEMINI_API_KEY=your_api_key_here
+          
+          <div style={{ margin: '12px 0' }}>
+            <input
+              type="password"
+              className="text-input"
+              placeholder="Paste your Gemini API Key here"
+              value={userApiKey}
+              onChange={(e) => setUserApiKey(e.target.value)}
+              style={{ marginBottom: '8px' }}
+            />
+            <button 
+              className="primary full-width"
+              onClick={() => handleSaveKey(userApiKey)}
+              disabled={!userApiKey.trim()}
+            >
+              Save Key
+            </button>
           </div>
+          
           <p className="small muted">
-            Create a file named <code>.env</code> in the project root and add the line above with your actual key. Restart the server if needed.
+            Your key is stored locally in your browser and sent directly to Google.
+            <br />
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>
+              Get a free Gemini API Key here
+            </a>
           </p>
         </div>
       </div>
@@ -158,9 +194,21 @@ export function AIGeneratorTab() {
       <div className="tab-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h3>AI Pose Generator</h3>
-          <span className="small muted" style={{ fontSize: '0.8em' }}>
-            {apiKey ? `Key loaded (ends in ...${apiKey.slice(-4)})` : 'No API key found'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="small muted" style={{ fontSize: '0.8em' }}>
+              {envApiKey ? 'Using Env Key' : `Key: ...${apiKey.slice(-4)}`}
+            </span>
+            {!envApiKey && (
+              <button 
+                className="secondary small"
+                onClick={handleClearKey}
+                title="Change API Key"
+                style={{ padding: '2px 6px', fontSize: '0.7em' }}
+              >
+                Change
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Model Selection */}

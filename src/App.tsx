@@ -32,6 +32,14 @@ function App() {
         {mobileDrawerOpen ? 'Close' : 'Controls'}
       </button>
 
+      {/* Mobile Backdrop */}
+      {mobileDrawerOpen && (
+        <div 
+          className="drawer-backdrop" 
+          onClick={() => setMobileDrawerOpen(false)}
+        />
+      )}
+
       {/* Mobile drawer */}
       <div className={`control-drawer ${mobileDrawerOpen ? 'open' : ''}`}>
         <ControlPanel mode={mode} />
