@@ -32,7 +32,7 @@ export function AppHeader({ mode, onModeChange }: AppHeaderProps) {
       <header className="app-header">
         <div className="app-header__left">
           <div className="app-header__logo">
-            <img src="/logo/poselab1.png" alt="PoseLab" />
+            <img src="/logo/poselab.svg" alt="PoseLab" />
             <span>PoseLab</span>
           </div>
           <div className="mode-switch">
