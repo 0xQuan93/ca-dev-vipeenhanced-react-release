@@ -67,11 +67,19 @@ const backgroundDefinitions: BackgroundDefinition[] = [
 const textureCache = new Map<string, THREE.Texture>();
 const textureLoader = new THREE.TextureLoader();
 
-export function getBackgroundDefinition(id: BackgroundId): BackgroundDefinition {
+export function getBackgroundDefinition(id: BackgroundId | string): BackgroundDefinition {
+  if (id.startsWith('blob:')) {
+    return {
+      id: id as BackgroundId,
+      label: 'Custom Background',
+      color: '#000000',
+      image: id
+    };
+  }
   return backgroundDefinitions.find((entry) => entry.id === id) ?? backgroundDefinitions[0];
 }
 
-export async function applyBackground(scene: THREE.Scene, id: BackgroundId) {
+export async function applyBackground(scene: THREE.Scene, id: BackgroundId | string) {
   const definition = getBackgroundDefinition(id);
   
   // Try to load image if specified

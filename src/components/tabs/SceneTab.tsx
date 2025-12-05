@@ -10,9 +10,11 @@ type AspectRatio = '16:9' | '1:1' | '9:16';
 export function SceneTab() {
   const { isAvatarReady, setAvatarReady } = useReactionStore();
   const [selectedBackground, setSelectedBackground] = useState('midnight-circuit');
+  const [customBackground, setCustomBackground] = useState<string | null>(null);
   const [showLogo, setShowLogo] = useState(true);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   const vrmInputRef = useRef<HTMLInputElement>(null);
+  const bgInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Initialize aspect ratio from sceneManager
@@ -35,9 +37,28 @@ export function SceneTab() {
     }
   };
 
+  const handleBackgroundUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file (PNG, JPG, SVG)');
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setCustomBackground(url);
+    setSelectedBackground('custom');
+    await sceneManager.setBackground(url);
+  };
+
   const handleBackgroundSelect = async (backgroundId: string) => {
     setSelectedBackground(backgroundId);
-    await sceneManager.setBackground(backgroundId as BackgroundId);
+    if (backgroundId === 'custom' && customBackground) {
+      await sceneManager.setBackground(customBackground);
+    } else {
+      await sceneManager.setBackground(backgroundId as BackgroundId);
+    }
   };
 
   const handleAspectRatioChange = (ratio: AspectRatio) => {
@@ -72,6 +93,25 @@ export function SceneTab() {
         <p className="muted small">Select a background for your scene</p>
         
         <div className="background-grid">
+          <button
+            className={`background-thumbnail ${selectedBackground === 'custom' ? 'active' : ''}`}
+            onClick={() => customBackground ? handleBackgroundSelect('custom') : bgInputRef.current?.click()}
+            title="Upload Custom Background"
+          >
+            <div className="background-thumbnail__preview" style={{
+              backgroundImage: customBackground ? `url(${customBackground})` : 'none',
+              backgroundColor: '#2a2a2a',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {!customBackground && <span style={{ fontSize: '1.5rem' }}>➕</span>}
+            </div>
+            <span className="background-thumbnail__name">Custom</span>
+          </button>
+
           {backgroundOptions.map((bg) => (
             <button
               key={bg.id}
@@ -88,6 +128,25 @@ export function SceneTab() {
               <span className="background-thumbnail__name">{bg.label}</span>
             </button>
           ))}
+        </div>
+
+        <div style={{ marginTop: '1rem' }}>
+          <button 
+            className="secondary full-width"
+            onClick={() => bgInputRef.current?.click()}
+          >
+            📤 Upload Background Image
+          </button>
+          <p className="muted small" style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+            Recommended: PNG/JPG, at least 1920x1080px
+          </p>
+          <input
+            ref={bgInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleBackgroundUpload}
+            style={{ display: 'none' }}
+          />
         </div>
       </div>
 

@@ -175,7 +175,7 @@ class SceneManager {
     this.controls.update();
   }
 
-  async setBackground(id: BackgroundId) {
+  async setBackground(id: BackgroundId | string) {
     if (!this.scene) return;
     await applyBackground(this.scene, id);
   }

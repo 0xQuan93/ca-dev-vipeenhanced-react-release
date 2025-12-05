@@ -82,14 +82,16 @@ export function ViewportOverlay({ mode, isPlaying, onPlayPause, onStop }: Viewpo
         </div>
       )}
 
-      {/* Logo overlay - bottom right */}
+      {/* Logo overlay - hidden but preserved for potential future use or reference */}
+      {/* 
       <div className="viewport-overlay bottom-right">
         <img
-          src="/logo/89-logo.svg"
+          src="/logo/poselab.svg"
           alt="Logo"
           className="logo-overlay"
         />
       </div>
+      */}
     </>
   );
 }
