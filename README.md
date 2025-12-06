@@ -10,6 +10,13 @@ A powerful web-based tool for creating and exporting VRM avatar reactions. Perfe
 
 ### 🧠 **Motion Engine & AI** (New!)
 - **AI Pose Generation**: Generate poses from text descriptions using Google Gemini.
+### 🤖 **AI Pose & Animation Generator** (New!)
+- **Natural Language Prompts**: Describe a pose ("Superhero landing", "Looking pensive") and watch it happen.
+- **Generative Animation**: Create looping or one-shot animations from text descriptions.
+- **Bio-Limits**: Smart skeleton constraints ensure physically impossible poses are corrected automatically.
+- **Powered by Google Gemini**: Leverages state-of-the-art LLMs for spatial reasoning.
+
+### 🧠 **Motion Engine**
 - **Procedural Synthesis**: Generates natural animations on the fly using bio-mechanical constraints.
 - **Kinetic Lag**: Simulates realistic body mechanics with core-to-extremity propagation.
 - **Hand Synergy**: Automatic finger articulation based on grip/relax patterns.
@@ -50,6 +57,11 @@ cd project89-reaction-forge
 
 # Install dependencies
 npm install
+
+# Configure Environment
+# Create a .env file in the root directory
+# Add your Google Gemini API Key:
+# VITE_GEMINI_API_KEY=your_api_key_here
 
 # Start development server
 npm run dev

@@ -92,7 +92,7 @@ export function PoseExpressionTab() {
     }
     
     // Create a fake input event to reuse the upload handler
-    const fakeInput = { target: { files: [file] } } as any;
+    const fakeInput = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>;
     await handlePoseUpload(fakeInput);
   };
 
@@ -111,6 +111,7 @@ export function PoseExpressionTab() {
   const handleClearPose = () => {
     setCustomPose(null);
     setCustomPoseName(null);
+    avatarManager.resetPose();
   };
 
   return (
