@@ -67,7 +67,7 @@ export function ControlPanel({ mode }: ControlPanelProps) {
           className={poseLabTab === 'animations' ? 'active' : ''}
           onClick={() => setPoseLabTab('animations')}
         >
-          Animations
+          Anims
         </button>
         <button
           className={poseLabTab === 'poses' ? 'active' : ''}
@@ -79,19 +79,19 @@ export function ControlPanel({ mode }: ControlPanelProps) {
           className={poseLabTab === 'ai' ? 'active' : ''}
           onClick={() => setPoseLabTab('ai')}
         >
-          AI Gen
+          AI
         </button>
         <button
           className={poseLabTab === 'timeline' ? 'active' : ''}
           onClick={() => setPoseLabTab('timeline')}
         >
-          Timeline
+          Seq
         </button>
         <button
           className={poseLabTab === 'export' ? 'active' : ''}
           onClick={() => setPoseLabTab('export')}
         >
-          Export
+          Save
         </button>
       </div>
 

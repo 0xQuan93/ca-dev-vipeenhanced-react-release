@@ -376,12 +376,9 @@ class AvatarManager {
 
     console.log('[AvatarManager] Playing animation clip:', clip.name, { loop });
 
-    // Reset humanoid pose before starting animation
-    if (this.vrm.humanoid?.resetNormalizedPose) {
-      this.vrm.humanoid.resetNormalizedPose();
-    } else {
-      this.vrm.humanoid?.resetPose();
-    }
+    // NOTE: We do NOT reset the pose here. 
+    // This allows the timeline to apply on top of the current state,
+    // and prevents "snapping" to T-pose if the clip doesn't cover all bones immediately.
 
     // Set animated state and play animation
     this.isAnimated = true;

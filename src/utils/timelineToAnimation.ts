@@ -3,6 +3,26 @@ import { VRM } from '@pixiv/three-vrm';
 import type { TimelineSequence } from '../types/timeline';
 
 /**
+ * Get the hierarchical path to a node from the root
+ * Returns format like: "Scene/Armature/Hips"
+ */
+function getNodePath(node: THREE.Object3D, root: THREE.Object3D): string | null {
+  const path: string[] = [];
+  let current: THREE.Object3D | null = node;
+
+  while (current && current !== root) {
+    path.unshift(current.name);
+    current = current.parent;
+  }
+
+  if (current === root) {
+    return path.join('/');
+  }
+
+  return null;
+}
+
+/**
  * Converts a TimelineSequence into a THREE.AnimationClip
  * capable of being played by the AnimationManager on the given VRM.
  */
@@ -10,23 +30,23 @@ export function timelineToAnimationClip(sequence: TimelineSequence, vrm: VRM): T
   const tracks: THREE.KeyframeTrack[] = [];
   
   // 1. Identify all participating bones
-  // We map Node Name -> { times: [], values: [] }
+  // We map Node Path -> { times: [], values: [] }
   const rotationTracks = new Map<string, { times: number[], values: number[] }>();
   const positionTracks = new Map<string, { times: number[], values: number[] }>();
 
   // Helper to get track data or create it
-  const getRotationTrack = (nodeName: string) => {
-    if (!rotationTracks.has(nodeName)) {
-      rotationTracks.set(nodeName, { times: [], values: [] });
+  const getRotationTrack = (nodePath: string) => {
+    if (!rotationTracks.has(nodePath)) {
+      rotationTracks.set(nodePath, { times: [], values: [] });
     }
-    return rotationTracks.get(nodeName)!;
+    return rotationTracks.get(nodePath)!;
   };
 
-  const getPositionTrack = (nodeName: string) => {
-    if (!positionTracks.has(nodeName)) {
-      positionTracks.set(nodeName, { times: [], values: [] });
+  const getPositionTrack = (nodePath: string) => {
+    if (!positionTracks.has(nodePath)) {
+      positionTracks.set(nodePath, { times: [], values: [] });
     }
-    return positionTracks.get(nodeName)!;
+    return positionTracks.get(nodePath)!;
   };
 
   // 2. Iterate through keyframes and gather data
@@ -43,9 +63,12 @@ export function timelineToAnimationClip(sequence: TimelineSequence, vrm: VRM): T
       
       if (!node) return;
 
+      const nodePath = getNodePath(node, vrm.scene);
+      if (!nodePath) return;
+
       // Handle Rotation
       if (transform.rotation) {
-        const trackData = getRotationTrack(node.name);
+        const trackData = getRotationTrack(nodePath);
         trackData.times.push(kf.time);
         // VRM Pose rotation is [x, y, z, w]
         trackData.values.push(...transform.rotation);
@@ -53,7 +76,7 @@ export function timelineToAnimationClip(sequence: TimelineSequence, vrm: VRM): T
 
       // Handle Position (mostly for Hips)
       if (transform.position) {
-        const trackData = getPositionTrack(node.name);
+        const trackData = getPositionTrack(nodePath);
         trackData.times.push(kf.time);
         // VRM Pose position is [x, y, z]
         trackData.values.push(...transform.position);
@@ -62,24 +85,24 @@ export function timelineToAnimationClip(sequence: TimelineSequence, vrm: VRM): T
   });
 
   // 3. Create KeyframeTracks
-  rotationTracks.forEach((data, nodeName) => {
+  rotationTracks.forEach((data, nodePath) => {
     if (data.times.length > 0) {
       // Create Quaternion track
-      // Name format: "NodeName.quaternion"
+      // Name format: "NodePath.quaternion"
       tracks.push(new THREE.QuaternionKeyframeTrack(
-        `${nodeName}.quaternion`,
+        `${nodePath}.quaternion`,
         data.times,
         data.values
       ));
     }
   });
 
-  positionTracks.forEach((data, nodeName) => {
+  positionTracks.forEach((data, nodePath) => {
     if (data.times.length > 0) {
       // Create Vector track
-      // Name format: "NodeName.position"
+      // Name format: "NodePath.position"
       tracks.push(new THREE.VectorKeyframeTrack(
-        `${nodeName}.position`,
+        `${nodePath}.position`,
         data.times,
         data.values
       ));
