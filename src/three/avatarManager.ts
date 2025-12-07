@@ -383,8 +383,9 @@ class AvatarManager {
    * Play an animation clip directly (for Pose Lab)
    * @param clip - The THREE.AnimationClip to play
    * @param loop - Whether to loop the animation (default: true)
+   * @param fade - Fade in duration in seconds (default: 0.3)
    */
-  playAnimationClip(clip: THREE.AnimationClip, loop = true) {
+  playAnimationClip(clip: THREE.AnimationClip, loop = true, fade = 0.3) {
     if (!this.vrm) {
       console.warn('[AvatarManager] Cannot play animation - VRM not loaded');
       return;
@@ -398,7 +399,7 @@ class AvatarManager {
 
     // Set animated state and play animation
     this.isAnimated = true;
-    animationManager.playAnimation(clip, loop);
+    animationManager.playAnimation(clip, loop, fade);
   }
 
 

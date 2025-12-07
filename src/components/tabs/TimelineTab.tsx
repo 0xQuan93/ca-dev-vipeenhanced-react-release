@@ -35,7 +35,12 @@ export function TimelineTab() {
       
       // If we have a clip, update the avatar manager
       if (newClip) {
-        avatarManager.playAnimationClip(newClip, false);
+        // Play with 0 fade for instant update
+        avatarManager.playAnimationClip(newClip, false, 0);
+        // Pause the internal mixer progression so TimelineTab controls time 100%
+        avatarManager.setAnimationSpeed(0);
+        // Force seek to current time immediately to prevent jump to 0
+        avatarManager.seekAnimation(currentTime);
       }
     } catch (e) {
       console.error('Failed to generate animation clip:', e);
