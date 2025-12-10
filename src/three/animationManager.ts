@@ -161,6 +161,7 @@ class AnimationManager {
      // 2. Play "to" clip (Target Animation)
      const toAction = this.mixer.clipAction(toClip);
      toAction.reset();
+     toAction.enabled = true; // Ensure it is enabled
      toAction.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, loop ? Infinity : 1);
      toAction.clampWhenFinished = !loop;
      toAction.play();

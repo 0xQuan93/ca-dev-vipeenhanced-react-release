@@ -29,6 +29,13 @@ const expressionMutators: Record<ExpressionId, ExpressionMutator> = {
   },
 };
 
+interface RawPoseData {
+  vrmPose?: VRMPose;
+  tracks?: any[]; // Animation clip data
+  sceneRotation?: { x: number; y: number; z: number };
+  expressions?: Record<string, number>;
+}
+
 class AvatarManager {
   private loader = new GLTFLoader();
   private vrm?: VRM;
@@ -46,8 +53,25 @@ class AvatarManager {
     return this.isManualPosing;
   }
 
+  getCurrentUrl(): string | undefined {
+    return this.currentUrl;
+  }
+
   setManualPosing(enabled: boolean) {
     this.isManualPosing = enabled;
+  }
+
+  /**
+   * Re-binds the current VRM to the active scene.
+   * Useful when the scene has been reset/recreated but the VRM is still loaded in memory.
+   */
+  rebindToScene() {
+    const scene = sceneManager.getScene();
+    if (this.vrm && scene) {
+        console.log('[AvatarManager] Rebinding VRM to new scene');
+        this.vrm.scene.removeFromParent();
+        scene.add(this.vrm.scene);
+    }
   }
 
   async load(url: string) {
@@ -105,8 +129,7 @@ class AvatarManager {
       
       // CRITICAL: Only update animation mixer when explicitly in animated mode
       // This prevents animations from interfering with static poses
-      // This prevents animations from interfering with static poses
-      if (this.isAnimated && animationManager.isPlaying()) {
+      if (this.isAnimated) {
         animationManager.update(delta);
       }
     });
@@ -114,7 +137,7 @@ class AvatarManager {
     return vrm;
   }
 
-  async applyRawPose(poseData: any, animationMode: AnimationMode = 'static') {
+  async applyRawPose(poseData: RawPoseData, animationMode: AnimationMode = 'static') {
     if (!this.vrm) {
       console.warn('[AvatarManager] Cannot apply raw pose - VRM not loaded');
       return;
@@ -622,11 +645,14 @@ class AvatarManager {
     // We can extract names from there
     const names: string[] = [];
     
-    // Access internal expressions array if available
-    // Note: TypeScript might complain if types aren't perfect, so we cast to any for safety
-    const manager = this.vrm.expressionManager as any;
+    const manager = this.vrm.expressionManager as any; // Cast to access internal properties if needed
     
-    if (manager.expressions) {
+    // VRM 1.0 standard way
+    if (this.vrm.expressionManager.expressionMap) {
+       Object.keys(this.vrm.expressionManager.expressionMap).forEach(name => names.push(name));
+    } 
+    // VRM 0.0 legacy way
+    else if (manager.expressions) {
       manager.expressions.forEach((expr: any) => {
         if (expr.expressionName) {
           names.push(expr.expressionName);
@@ -634,7 +660,7 @@ class AvatarManager {
       });
     } else if (manager._expressionMap) {
       // Fallback for older versions
-      Object.keys(manager._expressionMap).forEach(name => names.push(name));
+      Object.keys(manager._expressionMap).forEach((name: string) => names.push(name));
     }
     
     return names.sort();

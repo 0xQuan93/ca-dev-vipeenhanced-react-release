@@ -5,6 +5,7 @@ import { useReactionStore } from '../state/useReactionStore';
 import { useToastStore } from '../state/useToastStore';
 import { AboutModal } from './AboutModal';
 import { SettingsModal } from './SettingsModal';
+import { projectManager } from '../persistence/projectManager';
 
 interface AppHeaderProps {
   mode: 'reactions' | 'poselab';
@@ -13,6 +14,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ mode, onModeChange }: AppHeaderProps) {
   const vrmInputRef = useRef<HTMLInputElement>(null);
+  const projectInputRef = useRef<HTMLInputElement>(null);
   const [showAbout, setShowAbout] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const { currentUrl, setFileSource, sourceLabel } = useAvatarSource();
@@ -29,6 +31,25 @@ export function AppHeader({ mode, onModeChange }: AppHeaderProps) {
     }
     
     setFileSource(file);
+  };
+
+  const handleProjectLoad = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      
+      const success = await projectManager.loadFromFile(file);
+      if (success) {
+          addToast("Project loaded", "success");
+      } else {
+          addToast("Failed to load project", "error");
+      }
+      // Reset input value to allow reloading same file
+      event.target.value = '';
+  };
+
+  const handleProjectSave = () => {
+      projectManager.downloadProject("My Project");
+      addToast("Project saved", "success");
   };
 
   return (
@@ -97,6 +118,34 @@ export function AppHeader({ mode, onModeChange }: AppHeaderProps) {
           >
             ⚙️
           </button>
+          
+          <div style={{ width: '1px', height: '20px', background: 'var(--border-color)', margin: '0 0.5rem' }}></div>
+
+          <button 
+            className="icon-button"
+            style={{ width: '32px', height: '32px', fontSize: '1.1rem' }}
+            onClick={handleProjectSave}
+            title="Save Project"
+          >
+            💾
+          </button>
+          <button 
+            className="icon-button"
+            style={{ width: '32px', height: '32px', fontSize: '1.1rem' }}
+            onClick={() => projectInputRef.current?.click()}
+            title="Load Project"
+          >
+            📂
+          </button>
+          
+          <input
+            ref={projectInputRef}
+            type="file"
+            accept=".pose,.json"
+            onChange={handleProjectLoad}
+            style={{ display: 'none' }}
+          />
+
           <button 
             className="icon-button"
             style={{ width: '32px', height: '32px', fontSize: '0.9rem', marginLeft: '0.5rem' }}

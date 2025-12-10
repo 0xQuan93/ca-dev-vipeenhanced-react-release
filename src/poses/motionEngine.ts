@@ -22,7 +22,10 @@ interface EnergyStats {
   headToChestRatio: number;
   hipsToSpineRatio: number;
 }
-interface PoseData { [bone: string]: { x: number; y: number; z: number } | any; }
+interface PoseData { 
+  [bone: string]: { x: number; y: number; z: number } | { rotation: number[] } | any; 
+  hipsPosition?: { x: number; y: number; z: number };
+}
 
 /**
  * Configuration for procedural motion generation

@@ -78,22 +78,38 @@ class InteractionManager {
   toggle(enable: boolean) {
     if (this.isEnabled === enable) return;
     
-    // Lazy initialization
-    if (enable && !this.transformControls) {
-      this.init();
-      if (!this.transformControls) {
-        console.warn('[InteractionManager] Failed to initialize (scene not ready?)');
-        return;
-      }
+    // Force cleanup if enabling to ensure we have the latest scene/camera
+    if (enable) {
+        // Dispose old controls if they exist (from old scene/renderer)
+        if (this.transformControls) {
+            this.transformControls.dispose();
+            this.transformControls.removeFromParent();
+            this.transformControls = undefined;
+        }
+        
+        // Init with current scene context
+        this.init();
+        
+        if (!this.transformControls) {
+            console.warn('[InteractionManager] Failed to initialize (scene not ready?)');
+            return;
+        }
     }
     
     this.isEnabled = enable;
     const renderer = sceneManager.getRenderer();
     
     if (enable) {
-      this.createBoneHelpers();
-      renderer?.domElement.addEventListener('pointerdown', this.boundOnPointerDown);
-      console.log('[InteractionManager] Enabled - Bone helpers created');
+      // Re-fetch renderer in case it changed
+      const renderer = sceneManager.getRenderer();
+      if (renderer) {
+          this.createBoneHelpers();
+          renderer.domElement.addEventListener('pointerdown', this.boundOnPointerDown);
+          console.log('[InteractionManager] Enabled - Bone helpers created');
+      } else {
+          console.error('[InteractionManager] Cannot enable: Renderer not found');
+          this.isEnabled = false; // Revert state
+      }
     } else {
       this.removeBoneHelpers();
       this.transformControls?.detach();
@@ -188,16 +204,26 @@ class InteractionManager {
         });
       }
     } else {
-      // Clicked empty space? Deselect?
-      // Only deselect if we didn't click the gizmo. 
-      // But raycasting the gizmo is hard from here.
-      // Usually TransformControls intercepts events. 
-      // If we are here, maybe we missed everything.
-      // Let's not auto-deselect for now to be safe, or check if we are dragging.
-      // Better: click on background deselects.
+      // Clicked empty space or background -> Deselect
+      // We need to check if we clicked the Gizmo itself first
+      // But TransformControls usually consumes the event if interacted.
+      // If the event bubbled here, it means we clicked *past* the gizmo?
+      // Wait, we are binding to 'pointerdown' on the canvas. 
+      // Three.js Raycaster doesn't see the Gizmo lines easily.
       
-      // Checking if we are hovering the gizmo is tricky without accessing its internal raycaster.
-      // We'll leave it for now. Users can click another bone to switch.
+      // Heuristic: If we are dragging the Gizmo, dragging-changed event fires.
+      // If we just clicked empty space, we detach.
+      
+      // Let's rely on a simple logic: If nothing intersected, deselect.
+      // Users hate when they miss a click and lose selection, but standard 3D UX is "click background to deselect".
+      
+      // Verify we aren't hovering the gizmo?
+      // TransformControls doesn't expose "isHovered".
+      
+      // For now, let's implement click-background-to-deselect
+      console.log('[InteractionManager] Clicked background - Deselecting');
+      this.transformControls.detach();
+      this.boneHelpers.forEach(h => (h.material as THREE.MeshBasicMaterial).color.setHex(0x00ffd6)); // Reset colors
     }
   }
   

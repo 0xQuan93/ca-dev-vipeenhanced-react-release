@@ -35,39 +35,59 @@ function ErrorToast({ message, onClose }: { message: string; onClose: () => void
   );
 }
 
+import { interactionManager } from '../three/interactionManager';
+
 export function CanvasStage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const preset = useReactionStore((state) => state.activePreset);
-  const avatarReady = useReactionStore((state) => state.isAvatarReady);
-  const setAvatarReady = useReactionStore((state) => state.setAvatarReady);
   const animationMode = useReactionStore((state) => state.animationMode);
-  const sourceUrl = useAvatarSource((state) => state.currentUrl);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { currentUrl } = useAvatarSource();
+  
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [avatarReady, setAvatarReady] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     sceneManager.init(canvas);
-    return () => sceneManager.dispose();
+    
+    // Ensure avatar is in the new scene (if one is already loaded)
+    avatarManager.rebindToScene();
+    
+    // Initialize Interaction Manager (Gizmos)
+    // We do this after scene init to ensure renderer exists
+    // The lazy init in toggle() usually handles it, but this ensures events are bound if enabled
+    if (interactionManager.enabled) {
+       // Force re-init if enabled, as we just re-created the renderer
+       interactionManager.toggle(false);
+       interactionManager.toggle(true);
+    }
+
+    return () => {
+        sceneManager.dispose();
+        // interactionManager.dispose(); // Don't fully dispose, just detach? 
+        // Ideally SceneManager handles renderer disposal, InteractionManager handles its own listeners
+    };
   }, []);
 
   useEffect(() => {
-    if (!sourceUrl) return;
+    if (!currentUrl) return;
     let cancelled = false;
     
     // Start Loading
     setAvatarReady(false);
     setIsLoading(true);
     setErrorMessage(null);
-    console.log('[CanvasStage] Loading avatar from:', sourceUrl);
+    console.log('[CanvasStage] Loading avatar from:', currentUrl);
     
     avatarManager
-      .load(sourceUrl)
+      .load(currentUrl)
       .then(() => {
         if (cancelled) return;
         console.log('[CanvasStage] Avatar loaded successfully');
         setAvatarReady(true);
+        useReactionStore.setState({ isAvatarReady: true }); // Update global store
         const currentPreset = useReactionStore.getState().activePreset;
         console.log('[CanvasStage] Applying initial preset:', currentPreset.id);
         applyPreset(currentPreset);
@@ -78,6 +98,7 @@ export function CanvasStage() {
         setErrorMessage(error instanceof Error ? error.message : 'Failed to load VRM file');
         // Reset to allow retrying
         setAvatarReady(false);
+        useReactionStore.setState({ isAvatarReady: false }); // Update global store
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -86,7 +107,7 @@ export function CanvasStage() {
     return () => {
       cancelled = true;
     };
-  }, [sourceUrl, setAvatarReady]);
+  }, [currentUrl, setAvatarReady]);
 
   useEffect(() => {
     if (!avatarReady) return;

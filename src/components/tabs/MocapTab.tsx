@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { MotionCaptureManager } from '../../utils/motionCapture';
 import { avatarManager } from '../../three/avatarManager';
+import { useAnimationStore } from '../../state/useAnimationStore';
+import { useToastStore } from '../../state/useToastStore';
+import { convertAnimationToScenePaths } from '../../pose-lab/convertAnimationToScenePaths';
 
 export function MocapTab() {
+  const { addToast } = useToastStore();
+  const { addAnimation } = useAnimationStore();
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isActive, setIsActive] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const managerRef = useRef<MotionCaptureManager | null>(null);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (videoRef.current && !managerRef.current) {
@@ -17,8 +26,48 @@ export function MocapTab() {
         if (managerRef.current) {
             managerRef.current.stop();
         }
+        if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  const toggleRecording = () => {
+      if (!managerRef.current || !isActive) return;
+
+      if (isRecording) {
+          // Stop Recording
+          const clip = managerRef.current.stopRecording();
+          setIsRecording(false);
+          if (timerRef.current) clearInterval(timerRef.current);
+          setRecordingTime(0);
+
+          if (clip) {
+              const vrm = avatarManager.getVRM();
+              if (vrm) {
+                  try {
+                      // Convert bone names to scene paths for playback
+                      const sceneClip = convertAnimationToScenePaths(clip, vrm);
+                      const name = `Mocap Take ${new Date().toLocaleTimeString()}`;
+                      addAnimation(sceneClip, name);
+                      addToast(`Recording saved: ${name}`, 'success');
+                  } catch (e) {
+                      console.error(e);
+                      addToast('Failed to process recording', 'error');
+                  }
+              }
+          } else {
+              addToast('No motion data recorded', 'warning');
+          }
+
+      } else {
+          // Start Recording
+          managerRef.current.startRecording();
+          setIsRecording(true);
+          setRecordingTime(0);
+          timerRef.current = window.setInterval(() => {
+              setRecordingTime(t => t + 1);
+          }, 1000);
+      }
+  };
 
   const toggleMocap = async () => {
     if (!managerRef.current) return;
@@ -39,8 +88,9 @@ export function MocapTab() {
                 throw new Error("Webcam access requires HTTPS (Secure Context).");
             }
 
-            // Stop any conflicting animation
-            avatarManager.stopAnimation();
+            // Freeze the current pose instead of resetting to T-pose
+            // This prevents the avatar from snapping to T-pose while the camera initializes
+            avatarManager.freezeCurrentPose();
             
             managerRef.current.setVRM(vrm);
             await managerRef.current.start();
@@ -116,12 +166,35 @@ export function MocapTab() {
             </div>
         )}
 
-        <button 
-            className={`primary full-width ${isActive ? 'danger' : ''}`}
-            onClick={toggleMocap}
-        >
-            {isActive ? '🛑 Stop Capture' : '🎥 Start Capture'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+                className={`primary full-width ${isActive ? 'secondary' : ''}`}
+                onClick={toggleMocap}
+            >
+                {isActive ? '🛑 Stop Camera' : '🎥 Start Camera'}
+            </button>
+
+            {isActive && (
+                <>
+                <button 
+                    className={`primary full-width ${isRecording ? 'danger' : ''}`}
+                    onClick={toggleRecording}
+                >
+                    {isRecording ? `⏹️ Stop (${recordingTime}s)` : '🔴 Record'}
+                </button>
+                <button
+                    className="secondary full-width"
+                    onClick={() => {
+                        managerRef.current?.calibrate();
+                        addToast("Calibrating T-Pose... Stand straight!", "info");
+                    }}
+                    title="Stand in T-Pose and click to calibrate offsets"
+                >
+                    📏 Calibrate
+                </button>
+                </>
+            )}
+        </div>
       </div>
       
       <div className="tab-section">
@@ -129,6 +202,7 @@ export function MocapTab() {
           <ul className="small muted" style={{ paddingLeft: '1.2rem' }}>
               <li>Stand back to show your full body/upper body.</li>
               <li>Ensure good lighting on your face and body.</li>
+              <li><strong>Calibration:</strong> Stand in a T-Pose and click "Calibrate" to align your body with the avatar.</li>
               <li>Wait a moment for the AI model to initialize.</li>
           </ul>
       </div>

@@ -1,0 +1,65 @@
+# Cursor Rules for Project89 Reaction Forge (PoseLab)
+
+## Project Overview
+PoseLab is a browser-based tool for creating, posing, animating, and capturing VRM avatars. It uses React for the UI and vanilla Three.js (via Manager classes) for the 3D scene.
+
+## Tech Stack
+- **Frontend Framework**: React 18+ (Vite)
+- **Language**: TypeScript (Strict mode)
+- **3D Engine**: Three.js (r160+)
+- **VRM Loader**: @pixiv/three-vrm (1.0+)
+- **State Management**: Zustand
+- **Styling**: CSS Modules / Plain CSS with CSS Variables (Design Tokens)
+- **Icons**: Text/Emoji or SVG
+
+## Code Style & Conventions
+
+### General
+- Use **Functional Components** with hooks.
+- Use **TypeScript** for all new code. Avoid `any` where possible. Define interfaces for props and data structures.
+- Prefer **Named Exports** over default exports.
+- **File Naming**: PascalCase for Components (`CanvasStage.tsx`), camelCase for utilities/hooks (`useAnimationStore.ts`, `sceneManager.ts`).
+
+### Three.js Architecture
+- **Managers Pattern**: Do NOT use `react-three-fiber`. The project uses a "Manager" pattern where Three.js logic is encapsulated in singleton classes to decouple it from React renders.
+  - `sceneManager.ts`: Handles Scene, Camera, Renderer, Loop.
+  - `avatarManager.ts`: Handles VRM loading, posing, animation mixing.
+  - `interactionManager.ts`: Handles Gizmos (TransformControls) and Raycasting.
+- **Access**: React components interact with these managers via exported singleton instances (e.g., `import { avatarManager } from '../three/avatarManager'`).
+- **Reactivity**: Use `useReactionStore` or `useAnimationStore` to trigger changes in Managers. Managers should subscribe to stores or be called imperatively from `useEffect`.
+
+### State Management (Zustand)
+- Store all global UI state (active preset, timeline, animation mode) in Zustand stores (`src/state/`).
+- Keep stores granular (`useReactionStore`, `useTimelineStore`, `useSettingsStore`).
+
+### VRM & Animation
+- **VRM Handling**: Always check for `vrm.humanoid` before accessing bones.
+- **Bone Access**: Use `vrm.humanoid.getNormalizedBoneNode(VRMHumanBoneName.Hips)`.
+- **Animation**: Use `THREE.AnimationMixer`.
+- **Poses**: Poses are stored as JSON objects (rotations in Euler degrees or Quaternions). Use `AvatarManager.applyPose` to handle transitions.
+
+### UI & Styling
+- **Design Tokens**: Use CSS variables defined in `src/index.css` (derived from `tokens/tokens.json`) for colors, spacing, and fonts.
+  - Background: `var(--bg-app)`, `var(--bg-panel)`
+  - Primary: `var(--primary)`, `var(--primary-hover)`
+  - Text: `var(--text-main)`, `var(--text-muted)`
+- **Components**: Keep UI logic separate from 3D logic. UI overlays (`ViewportOverlay`) should sit on top of the `CanvasStage`.
+- **Toasts**: Use `useToastStore` for user feedback.
+
+### Common Patterns / "Gotchas"
+- **Black Screen on Reset**: When `SceneManager` re-inits (e.g., context loss or remount), `AvatarManager` must be told to `rebindToScene()` to move the cached VRM to the new scene. `InteractionManager` must be toggled off/on to bind new renderer events.
+- **T-Pose Issues**: When switching from Animation to Manual Posing, use `avatarManager.freezeCurrentPose()` to capture the current frame as a static pose instead of `stopAnimation()` (which snaps to T-pose).
+- **Coordinate System**: VRM uses a specific coordinate system. When applying raw data (e.g., MediaPipe), ensure proper mapping to VRM Humanoid Bone names.
+
+## Directory Structure
+- `src/components`: React UI components.
+- `src/three`: Three.js Managers (Scene, Avatar, Interaction, Backgrounds).
+- `src/state`: Zustand stores.
+- `src/poses`: JSON pose definitions and generators.
+- `src/utils`: Helper functions (Mocap, Math).
+- `src/export`: Export logic (GLB, Image, Video).
+
+## Documentation
+- Refer to `docs/SYSTEM-OVERVIEW-v1.2.md` for architectural details.
+- Update `ROADMAP.md` when completing major features.
+

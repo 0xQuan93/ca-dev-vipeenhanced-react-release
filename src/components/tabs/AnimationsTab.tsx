@@ -9,9 +9,13 @@ import { useReactionStore } from '../../state/useReactionStore';
 import { useToastStore } from '../../state/useToastStore';
 import { motionEngine } from '../../poses/motionEngine';
 
+import { useAnimationStore } from '../../state/useAnimationStore';
+
 export function AnimationsTab() {
   const { addToast } = useToastStore();
-  const [animations, setAnimations] = useState<Array<{ name: string; duration: number; clip: THREE.AnimationClip }>>([]);
+  // Use global store instead of local state
+  const { animations, addAnimation } = useAnimationStore();
+  // const [animations, setAnimations] = useState<Array<{ name: string; duration: number; clip: THREE.AnimationClip }>>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -101,14 +105,15 @@ export function AnimationsTab() {
       });
 
       // Add to animations list
-      const newAnimation = {
-        name: scenePathClip.name,
-        duration: scenePathClip.duration,
-        clip: scenePathClip,
-      };
+      // const newAnimation = {
+      //   name: scenePathClip.name,
+      //   duration: scenePathClip.duration,
+      //   clip: scenePathClip,
+      // };
 
-      setAnimations([...animations, newAnimation]);
-      setStatusMessage(`✅ Loaded: ${newAnimation.name}`);
+      addAnimation(scenePathClip, scenePathClip.name);
+      // setAnimations([...animations, newAnimation]);
+      setStatusMessage(`✅ Loaded: ${scenePathClip.name}`);
 
       // Auto-play the animation
       playAnimation(scenePathClip);
@@ -202,13 +207,14 @@ export function AnimationsTab() {
        // Retarget to Scene Paths
        const scenePathClip = convertAnimationToScenePaths(clip, vrm);
 
-       const newAnimation = {
-         name: `Generated ${procType} (${procEmotion})`,
-         duration: scenePathClip.duration,
-         clip: scenePathClip
-       };
+      //  const newAnimation = {
+      //    name: `Generated ${procType} (${procEmotion})`,
+      //    duration: scenePathClip.duration,
+      //    clip: scenePathClip
+      //  };
 
-       setAnimations([...animations, newAnimation]);
+       addAnimation(scenePathClip, `Generated ${procType} (${procEmotion})`);
+       // setAnimations([...animations, newAnimation]);
        playAnimation(scenePathClip);
        addToast(`Generated ${procType} animation`, 'success');
 
@@ -343,8 +349,8 @@ export function AnimationsTab() {
           <div className="tab-section">
             <h3>Loaded Animations</h3>
             <div className="animation-list">
-              {animations.map((anim, index) => (
-                <div key={index} className="animation-item">
+              {animations.map((anim) => (
+                <div key={anim.id} className="animation-item">
                   <div className="animation-item__info">
                     <strong>{anim.name}</strong>
                     <span>{anim.duration.toFixed(2)}s</span>

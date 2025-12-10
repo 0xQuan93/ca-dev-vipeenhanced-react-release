@@ -4,85 +4,97 @@ This document outlines the planned upgrades and feature requests for PoseLab, fo
 
 ---
 
-## 📅 Short-Term Goals (v1.2)
+## 📅 Short-Term Goals (v1.2 - Completed ✅)
 
 ### 1. 🎞️ Animated Backgrounds (GIF & Video Support)
 **Goal:** Allow users to upload animated content for backgrounds to create dynamic scenes.
 - [x] **Video Support (.mp4, .webm):** Implement `THREE.VideoTexture` to handle video files natively.
-- [x] **GIF Support (.gif):** Integrate a GIF decoder (e.g., `omggif` or `gif.js`) to support animated GIF textures in the 3D scene.
-- [x] **Export Logic:** Ensure `MediaRecorder` captures the animated background frame-by-frame during export.
+- [x] **GIF Support (.gif):** Integrate a GIF decoder to support animated GIF textures.
+- [x] **Export Logic:** Ensure `MediaRecorder` captures the animated background.
 
 ### 2. 🎬 Timeline & Keyframing (Basic)
 **Goal:** Move beyond static poses and simple loops to custom sequences.
-- [x] **Keyframe Editor:** A simple timeline interface to set poses at specific timestamps. (Implemented v1.2)
-- [x] **Interpolation Control:** Basic Linear interpolation between poses. (Implemented v1.2)
-- [x] **Sequence Export:** Export the full timeline as a `.json` animation clip or `.webm` video. (Implemented v1.2)
+- [x] **Keyframe Editor:** A simple timeline interface to set poses at specific timestamps.
+- [x] **Interpolation Control:** Basic Linear interpolation between poses.
+- [x] **Sequence Export:** Export the full timeline as a `.json` animation clip or `.webm` video.
 
 ### 3. 🕹️ Advanced IK Controls
 **Goal:** Provide more precise control over limbs without relying solely on presets.
-- [x] **Transform Gizmos:** Interactive Translate/Rotate gizmos attached to hands, feet, and hips. (Implemented v1.2)
-- [ ] **IK Solver Upgrade:** Integrate a more robust IK solver (e.g., `three-ik` or `closed-chain-ik`) for better joint constraints.
-- [ ] **Finger Poser:** A dedicated UI for individual finger phalanx control.
+- [x] **Transform Gizmos:** Interactive Translate/Rotate gizmos attached to hands, feet, and hips.
+- [x] **Context-Aware:** Click bones to select, click background to deselect.
+- [x] **Rotation Mode:** Local/World space toggle.
 
-### 4. 📤 Advanced Export & Interop (New!)
+### 4. 📤 Advanced Export & Interop
 **Goal:** Ensure assets created in PoseLab can be used in other tools (Blender, Unity).
-- [x] **GLB Export:** Export the VRM with baked animation data as a standard `.glb` file. (Implemented v1.2)
-- [x] **Asset Packs:** Shareable JSON libraries of custom poses. (Implemented v1.2)
+- [x] **GLB Export:** Export the VRM with baked animation data as a standard `.glb` file.
+- [x] **Asset Packs:** Shareable JSON libraries of custom poses.
+- [x] **Video Hardening:** Codec detection (VP9/VP8) for reliable WebM export.
 
----
-
-## 🚀 Mid-Term Goals (v2.0)
-
-### 5. 📸 Webcam Motion Capture (New!)
+### 5. 📸 Webcam Motion Capture
 **Goal:** Real-time pose tracking using MediaPipe.
-- [x] **Webcam Input:** Integrate `@mediapipe/pose` or `@mediapipe/tasks-vision`. (Implemented v1.2)
-- [x] **Real-time Retargeting:** Map MediaPipe landmarks to VRM humanoid bones. (Implemented v1.2)
-- [ ] **Recording:** Record mocap sessions to the timeline. (Pending)
+- [x] **Webcam Input:** Integrated MediaPipe Holistic.
+- [x] **Real-time Retargeting:** Map MediaPipe landmarks to VRM humanoid bones.
+- [x] **Recording:** Capture motion sessions to `AnimationClip` for playback/export.
+- [x] **Calibration:** T-Pose calibration for accurate retargeting.
 
 ### 6. 💾 Project Persistence
 **Goal:** Allow users to save their entire workspace state.
-- [ ] **Project Files (.pose):** Save a JSON file containing the Avatar (ref), Scene Settings, Background, and Timeline.
-- [ ] **Auto-Save:** LocalStorage backup of the current session to prevent data loss.
+- [x] **Project Files (.pose):** Save a JSON file containing the Avatar (ref), Scene Settings, Background, Timeline, and Presets.
+- [x] **Load/Save:** UI integration via Command Palette and Header.
 
-### 7. 👥 Multi-Avatar Composition
-**Goal:** Create interactions between multiple characters.
-- [ ] **Multiple Loaders:** Support loading and managing multiple VRM models in one scene.
-- [ ] **Interaction Poses:** Presets designed for two actors (e.g., high-five, hug, battle).
-
-### 8. 🌤️ Advanced Lighting & Environment
-**Goal:** Professional rendering quality.
-- [ ] **HDRI Support:** Allow uploading `.hdr` / `.exr` environment maps for realistic lighting.
-- [ ] **Light Controls:** Adjustable 3-point lighting (Key, Fill, Rim) with color and intensity sliders.
-- [ ] **Post-Processing:** Bloom, Color Grading, and Ambient Occlusion effects.
+### 7. ⌨️ Productivity Tools
+**Goal:** Speed up power user workflows.
+- [x] **Command Palette:** `Cmd+K` interface for instant tool access.
+- [x] **Toast Notifications:** Accessible status updates.
 
 ---
 
-## 🔮 Long-Term Vision (v3.0+)
+## 🚀 Mid-Term Goals (v1.3 - Next Up)
 
-### 9. 🤖 AI Motion Director
+### 8. 🛡️ Rendering & Visual Quality
+**Goal:** Professional rendering quality and style options.
+- [ ] **Advanced Lighting:** 3-point lighting controls (Key, Fill, Rim).
+- [ ] **HDRI Support:** Upload `.hdr`/`.exr` environment maps.
+- [ ] **Post-Processing:** Bloom, Color Grading (LUTs), and Ambient Occlusion (SSAO).
+- [ ] **Toon Shader Settings:** Customize outlines and shading steps.
+
+### 9. 👥 Multi-Avatar Composition
+**Goal:** Create interactions between multiple characters.
+- [ ] **Multiple Loaders:** Support loading and managing multiple VRM models in one scene.
+- [ ] **Interaction Poses:** Presets designed for two actors (e.g., high-five, hug, battle).
+- [ ] **Scene Graph:** Simple list to select active character.
+
+### 10. 🦾 IK Solver Upgrade
+**Goal:** Better biomechanical constraints.
+- [ ] **Full Body IK:** Drag a hand and have the arm/shoulder follow naturally (CCD or FABRIK).
+- [ ] **Floor Constraints:** Keep feet planted on the ground.
+
+---
+
+## 🔮 Long-Term Vision (v2.0+)
+
+### 11. 🤖 AI Motion Director
 **Goal:** Expand Gemini integration for full motion synthesis.
 - [ ] **Text-to-Animation:** "Make the avatar dance excitedly for 10 seconds."
 - [ ] **Motion Style Transfer:** Apply the "mood" of a text prompt to an existing animation.
 
-### 10. 📦 Asset Library Integration
-**Goal:** Direct access to cloud assets.
+### 12. 📦 Cloud Asset Library
+**Goal:** Direct access to shared assets.
 - [ ] **VRoid Hub Integration:** Direct import of avatars.
 - [ ] **Sketchfab Integration:** Import props and environments.
 
 ---
 
-## 📝 User Feedback Tracking
+## 📝 Feature Tracker
 
-| Request | Status | Priority |
+| Feature | Status | Priority |
 |---------|--------|----------|
-| GIF/Video Background Uploads | ✅ Done (v1.1) | High |
-| Export Content (Video/GIF) | ✅ Done (WebM) | High |
-| Mobile Uploads | ✅ Done | High |
-| Smart Export Presets | ✅ Done | High |
-| Better IK/Gizmos | ✅ Done (Basic FK) | Medium |
-| Expressions UI | ✅ Done | High |
-| AI Pose Gen (Gemini) | ✅ Done | High |
-| GLB Export (Baked Animation) | ✅ Done (v1.2) | High |
-| Webcam Mocap (MediaPipe) | ✅ Done (v1.2) | High |
-| Motion Engine (Procedural) | ✅ Done (v1.2) | High |
-| Multi-Avatar Scenes | 🚧 Planned | Medium |
+| **Core v1.0** | ✅ Done | - |
+| **Motion Capture (Basic)** | ✅ Done (v1.2) | High |
+| **Motion Capture (Recording)** | ✅ Done (v1.2) | High |
+| **Project Save/Load** | ✅ Done (v1.2) | High |
+| **Command Palette** | ✅ Done (v1.2) | High |
+| **Video Export Hardening** | ✅ Done (v1.2) | High |
+| **Advanced Lighting** | 🚧 Planned | Medium |
+| **Full Body IK** | 🚧 Planned | Medium |
+| **Multi-Avatar** | 🚧 Planned | Medium |

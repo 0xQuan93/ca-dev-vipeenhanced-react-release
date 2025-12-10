@@ -35,19 +35,21 @@ In the age of algorithmic fragmentation, owning your digital presence is an act 
 *Deep dive into character posing and animation.*
 - **Timeline Editor**: Create sequences by capturing keyframes and interpolating between them.
 - **AI Pose Gen**: Describe a pose ("ninja landing", "thinking hard") and let Gemini AI create it.
-- **Motion Capture (Beta)**: Control your avatar in real-time using your webcam (Body + Face tracking).
-- **Manual Posing**: Fine-tune joints with interactive Gizmos (Rotate/Translate).
+- **Motion Capture (v1.2)**: Control your avatar in real-time using your webcam (Body + Face tracking).
+  - **Recording**: Capture motion to animation clips.
+  - **Calibration**: T-Pose calibration for accurate retargeting.
+- **Manual Posing**: Fine-tune joints with context-aware **Gizmos** (Rotate/Translate).
 - **Full Expression Control**: Access every blendshape your avatar supports (A, I, U, E, O, Blink, etc.).
 - **Retargeting Engine**: Import Mixamo FBX animations and automatically retarget them to your VRM.
-- **Keyframe Export**: Save poses and animations as lightweight JSON files.
+- **Project Persistence**: Save and Load your entire workspace (`.pose` files).
 
 ### 🚀 **Production Ready (v1.2)**
 - **Smart Exports**: One-click presets for YouTube Thumbnails (720p), TikToks (9:16), and Square (1:1).
 - **Video Hardening**: Intelligent codec detection (VP9/VP8) ensures your exports play everywhere.
 - **Command Palette**: Press `Cmd/Ctrl+K` to access every tool instantly.
+- **Design System**: Unified UI with consistent Design Tokens and Dark Mode aesthetics.
 - **Performance Mode**: Auto-detects device capabilities to ensure smooth framerates on laptops.
 - **Transparent PNGs**: Export clean cutouts for Photoshop or OBS.
-- **Mobile Optimized**: Fully responsive UI for creating content on the go.
 - **Privacy First**: [Read our Privacy Policy](PRIVACY.md). All processing happens locally.
 
 ---
@@ -76,11 +78,12 @@ In the age of algorithmic fragmentation, owning your digital presence is an act 
 3.  **Camera**: Set camera to **¾ View**.
 4.  **Export**: Go to **Export** → Select **WebM** → Click **Vertical (9:16)**.
 
-### 👨‍💻 **For Developers**
-**Goal: Extract animation data for a game.**
-1.  **Import**: Drag & drop a Mixamo FBX file into **Pose Lab**.
-2.  **Preview**: Check the retargeting in the viewport.
-3.  **Export**: Use **GLB Export** to get the mesh + animation baked into a single file.
+### 🎥 **For Mocap Performers**
+**Goal: Record a custom motion.**
+1.  **Mocap Tab**: Click "Start Camera".
+2.  **Calibrate**: Stand in T-Pose and click "Calibrate".
+3.  **Record**: Click "Record", perform your action, then "Stop".
+4.  **Use**: The recording is automatically added to your Animations list.
 
 ---
 
@@ -133,6 +136,7 @@ Please read our **[CONTRIBUTING.md](CONTRIBUTING.md)** for details on how to sub
 - **[three-vrm](https://github.com/pixiv/three-vrm)**: The backbone of VRM on the web.
 - **[Mixamo](https://www.mixamo.com/)**: For the animation library support.
 - **[Google Gemini](https://deepmind.google/technologies/gemini/)**: Powering our text-to-pose engine.
+- **[MediaPipe](https://developers.google.com/mediapipe)**: Powering our Holistic motion capture.
 
 ---
 
