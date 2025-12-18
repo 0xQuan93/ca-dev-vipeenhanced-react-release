@@ -23,7 +23,8 @@ export type BackgroundId =
   | 'cyber-waves'
   | 'signal-breach'
   | 'quantum-field'
-  | 'protocol-dawn';
+  | 'protocol-dawn'
+  | 'green-screen';
 
 // Animation playback mode
 export type AnimationMode = 'static' | 'loop' | 'once';
