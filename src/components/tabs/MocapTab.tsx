@@ -20,6 +20,7 @@ export function MocapTab() {
   const timerRef = useRef<number | null>(null);
   
   const [isGreenScreen, setIsGreenScreen] = useState(false);
+  const [mocapMode, setMocapMode] = useState<'full' | 'face'>('full');
 
   useEffect(() => {
     if (videoRef.current && !managerRef.current) {
@@ -43,6 +44,22 @@ export function MocapTab() {
           // Set to Green Screen
           sceneManager.setBackground('green-screen');
           setIsGreenScreen(true);
+      }
+  };
+
+  const handleModeChange = (mode: 'full' | 'face') => {
+      setMocapMode(mode);
+      if (managerRef.current) {
+          managerRef.current.setMode(mode);
+      }
+      
+      if (mode === 'face') {
+          // Reset body to neutral when switching to face only
+          // This prevents weird frozen IK poses
+          avatarManager.resetPose();
+          addToast("Switched to Face Only mode", "info");
+      } else {
+          addToast("Switched to Full Body mode", "info");
       }
   };
 
@@ -182,6 +199,24 @@ export function MocapTab() {
             </div>
         )}
 
+        {/* Mode Selection */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+            <button
+                className={`secondary full-width ${mocapMode === 'full' ? 'active' : ''}`}
+                onClick={() => handleModeChange('full')}
+                title="Track both body and face"
+            >
+                🧍 Full Body
+            </button>
+            <button
+                className={`secondary full-width ${mocapMode === 'face' ? 'active' : ''}`}
+                onClick={() => handleModeChange('face')}
+                title="Track face only (Body stays idle)"
+            >
+                👤 Face Only
+            </button>
+        </div>
+
         <div style={{ display: 'flex', gap: '10px' }}>
             <button 
                 className={`primary full-width ${isActive ? 'secondary' : ''}`}
@@ -223,10 +258,10 @@ export function MocapTab() {
       <div className="tab-section">
           <h3>Instructions</h3>
           <ul className="small muted" style={{ paddingLeft: '1.2rem' }}>
-              <li>Stand back to show your full body/upper body.</li>
-              <li>Ensure good lighting on your face and body.</li>
-              <li><strong>Calibration:</strong> Stand in a T-Pose and click "Calibrate" to align your body with the avatar.</li>
-              <li>Wait a moment for the AI model to initialize.</li>
+              <li><strong>Face Only:</strong> Good for streaming/talking. Body stays still.</li>
+              <li><strong>Full Body:</strong> Stand back to show your full body.</li>
+              <li><strong>Calibration:</strong> Stand in a T-Pose and click "Calibrate" to align your body.</li>
+              <li>Ensure good lighting on your face.</li>
           </ul>
       </div>
     </div>

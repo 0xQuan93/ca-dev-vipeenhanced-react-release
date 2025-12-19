@@ -20,6 +20,15 @@ export class MotionCaptureManager {
   // Track available blendshapes on the current avatar for fuzzy matching
   private availableBlendshapes: Set<string> = new Set();
   
+  // Tracking Mode
+  private mode: 'full' | 'face' = 'full';
+
+  // Smoothing State
+  private targetFaceValues: Map<string, number> = new Map();
+  private currentFaceValues: Map<string, number> = new Map();
+  private targetBoneRotations: Map<string, THREE.Quaternion> = new Map();
+  private updateLoopId: number | null = null;
+  
   // Recording State
   private isRecording = false;
   private recordedFrames: RecordedFrame[] = [];
@@ -53,12 +62,20 @@ export class MotionCaptureManager {
     this.updateAvailableBlendshapes();
   }
 
+  setMode(mode: 'full' | 'face') {
+      this.mode = mode;
+      console.log('[MotionCaptureManager] Set mode:', mode);
+  }
+
   private updateAvailableBlendshapes() {
     this.availableBlendshapes.clear();
+    this.targetFaceValues.clear();
+    this.currentFaceValues.clear();
+    this.targetBoneRotations.clear();
+    
     if (!this.vrm?.expressionManager) return;
     
     // Extract available expression names from VRM
-    // This supports both VRM 0.0 and 1.0 structures
     const manager = this.vrm.expressionManager as any;
     
     if (manager.expressionMap) {
@@ -71,7 +88,7 @@ export class MotionCaptureManager {
        Object.keys(manager._expressionMap).forEach(name => this.availableBlendshapes.add(name));
     }
     
-    // console.log('[MotionCaptureManager] Updated available blendshapes:', Array.from(this.availableBlendshapes));
+    console.log('[MotionCaptureManager] Available blendshapes:', Array.from(this.availableBlendshapes));
   }
 
   async start() {
@@ -88,6 +105,7 @@ export class MotionCaptureManager {
 
         await this.camera.start();
         this.isTracking = true;
+        this.startUpdateLoop();
     } catch (e) {
         console.error('Failed to start camera:', e);
         throw e;
@@ -103,6 +121,61 @@ export class MotionCaptureManager {
         this.camera = undefined;
     }
     this.isTracking = false;
+    this.stopUpdateLoop();
+  }
+  
+  private startUpdateLoop() {
+      if (this.updateLoopId) return;
+      const update = () => {
+          this.updateFrame();
+          this.updateLoopId = requestAnimationFrame(update);
+      };
+      this.updateLoopId = requestAnimationFrame(update);
+  }
+  
+  private stopUpdateLoop() {
+      if (this.updateLoopId) {
+          cancelAnimationFrame(this.updateLoopId);
+          this.updateLoopId = null;
+      }
+  }
+
+  // --- Main Update Loop for Smoothing ---
+  private updateFrame() {
+      if (!this.vrm || !this.vrm.humanoid || !this.vrm.expressionManager) return;
+      
+      const lerpFactor = 0.25; // Adjust for smoothness vs responsiveness
+      
+      // 1. Smooth Facial Expressions
+      this.targetFaceValues.forEach((targetVal, name) => {
+          const currentVal = this.currentFaceValues.get(name) || 0;
+          const newVal = THREE.MathUtils.lerp(currentVal, targetVal, lerpFactor);
+          this.currentFaceValues.set(name, newVal);
+          
+          if (Math.abs(newVal - currentVal) > 0.001) {
+              this.vrm!.expressionManager!.setValue(name, newVal);
+          }
+      });
+      this.vrm.expressionManager.update();
+      
+      // 2. Smooth Bone Rotations
+      this.targetBoneRotations.forEach((targetQ, boneName) => {
+          // In Face mode, only allow Head/Neck bones
+          if (this.mode === 'face') {
+              const isHeadBone = boneName.toLowerCase().includes('head') || boneName.toLowerCase().includes('neck');
+              if (!isHeadBone) return;
+          }
+
+          // @ts-ignore
+          const node = this.vrm!.humanoid!.getNormalizedBoneNode(boneName);
+          if (node) {
+              node.quaternion.slerp(targetQ, lerpFactor);
+          }
+      });
+      
+      // Only update if we are not recording (recording handles its own update/capture)
+      // Actually we should always update visual model
+      this.vrm.humanoid.update();
   }
 
   startRecording() {
@@ -158,12 +231,51 @@ export class MotionCaptureManager {
       return new THREE.AnimationClip(`Mocap_Take_${Date.now()}`, duration, tracks);
   }
 
+  private calculateSmile(landmarks: any[]): number {
+      if (!landmarks || landmarks.length < 300) return 0;
+      
+      // Landmarks:
+      // 10: Top of head (approx hairline/forehead top)
+      // 152: Chin
+      // 61: Mouth corner left
+      // 291: Mouth corner right
+      // 0: Upper lip bottom (center)
+      // 17: Lower lip top (center)
+      
+      const y10 = landmarks[10].y;
+      const y152 = landmarks[152].y;
+      const faceHeight = Math.abs(y152 - y10);
+      
+      if (faceHeight === 0) return 0;
+      
+      const leftCornerY = landmarks[61].y;
+      const rightCornerY = landmarks[291].y;
+      const avgCornerY = (leftCornerY + rightCornerY) / 2;
+      
+      const upperLipY = landmarks[0].y; // or 13
+      const lowerLipY = landmarks[17].y; // or 14
+      const centerMouthY = (upperLipY + lowerLipY) / 2;
+      
+      // Delta: Positive if corners are higher (smaller y) than center
+      // Y increases downwards
+      const delta = centerMouthY - avgCornerY;
+      
+      // Normalize by face height
+      const ratio = delta / faceHeight;
+      
+      // Thresholds: Tuned experimentally
+      // A neutral mouth has corners roughly aligned or slightly lower than center
+      // A smile raises corners significantly
+      const minRatio = 0.02; 
+      const maxRatio = 0.08;
+      
+      return THREE.MathUtils.clamp((ratio - minRatio) / (maxRatio - minRatio), 0, 1);
+  }
+
   private handleResults = (results: Results) => {
     if (!this.vrm) return;
 
     // 1. Capture Frame (if recording)
-    // We do this regardless of tracking status to ensure we capture the avatar's state (even if static/T-pose)
-    // and to prevent "No motion data" errors if tracking is intermittent.
     if (this.isRecording) {
         this.captureFrame();
     }
@@ -172,25 +284,22 @@ export class MotionCaptureManager {
     if (!results.poseLandmarks && !results.faceLandmarks) return;
     
     // 3. Solve Pose using Kalidokit
-    // NOTE: Kalidokit expects poseWorldLandmarks but MediaPipe Holistic output calls it ea (in minified form) 
-    // or sometimes it's missing. We can try using poseLandmarks for both if world is missing, 
-    // but world landmarks are better for 3D rotation.
-    // The @mediapipe/holistic types might differ slightly from actual runtime object or Kalidokit expectation.
-    // We cast to any to bypass strict type checking on the results object for now.
-    const poseWorldLandmarks = (results as any).poseWorldLandmarks || (results as any).ea;
-    
-    // Safety check for landmarks array to prevent "Cannot read properties of undefined (reading '23')"
-    if (results.poseLandmarks && results.poseLandmarks.length >= 33) {
-        try {
-            const poseRig = Kalidokit.Pose.solve(results.poseLandmarks, poseWorldLandmarks, {
-                runtime: 'mediapipe',
-                video: this.videoElement
-            });
-            if (poseRig) {
-                this.applyPoseRig(poseRig);
+    // Only solve/apply pose if in full body mode
+    if (this.mode === 'full') {
+        const poseWorldLandmarks = (results as any).poseWorldLandmarks || (results as any).ea;
+        
+        if (results.poseLandmarks && results.poseLandmarks.length >= 33) {
+            try {
+                const poseRig = Kalidokit.Pose.solve(results.poseLandmarks, poseWorldLandmarks, {
+                    runtime: 'mediapipe',
+                    video: this.videoElement
+                });
+                if (poseRig) {
+                    this.applyPoseRig(poseRig);
+                }
+            } catch (error) {
+                console.warn("[MotionCapture] Pose solver error:", error);
             }
-        } catch (error) {
-            console.warn("[MotionCapture] Pose solver error:", error);
         }
     }
 
@@ -203,6 +312,12 @@ export class MotionCaptureManager {
                 smoothBlink: true, // Enable blink smoothing
                 blinkSettings: [0.25, 0.75], // Adjust thresholds for responsiveness
             });
+            
+            // Inject custom smile calculation
+            const smile = this.calculateSmile(results.faceLandmarks);
+            // @ts-ignore - Injecting custom property
+            faceRig.smile = smile;
+            
             if (faceRig) {
                 this.applyFaceRig(faceRig);
             }
@@ -248,44 +363,40 @@ export class MotionCaptureManager {
         this.shouldCalibrateNextFrame = false;
     }
 
-    const rotateBone = (key: string, rotation: { x: number, y: number, z: number, w?: number }) => {
+    const setTargetRotation = (key: string, rotation: { x: number, y: number, z: number, w?: number }) => {
         const boneName = getVRMBoneName(key);
         // @ts-ignore
-        const node = this.vrm!.humanoid!.getNormalizedBoneNode(boneName);
-        if (node) {
-            if (rotation.w !== undefined) {
-                // Create target quaternion from rig
-                let targetQ = new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);
-                
-                // Apply Calibration Offset: Target = Measured * Inverse(Calibration)
-                if (this.calibrationOffsets[key]) {
-                    const invCalibration = this.calibrationOffsets[key].clone().invert();
-                    targetQ.multiply(invCalibration);
-                }
-
-                // Reference Motion Engine Limits
-                // Convert to Euler for clamping
-                const euler = new THREE.Euler().setFromQuaternion(targetQ, 'XYZ');
-                const deg = {
-                    x: THREE.MathUtils.radToDeg(euler.x),
-                    y: THREE.MathUtils.radToDeg(euler.y),
-                    z: THREE.MathUtils.radToDeg(euler.z)
-                };
-                
-                // Apply constraints
-                const constrained = motionEngine.constrainRotation(boneName, deg);
-                
-                // Convert back
-                targetQ.setFromEuler(new THREE.Euler(
-                    THREE.MathUtils.degToRad(constrained.x),
-                    THREE.MathUtils.degToRad(constrained.y),
-                    THREE.MathUtils.degToRad(constrained.z),
-                    'XYZ'
-                ));
-                
-                // Slerp for smooth transition
-                node.quaternion.slerp(targetQ, 0.3);
+        if (rotation.w !== undefined) {
+            // Create target quaternion from rig
+            let targetQ = new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);
+            
+            // Apply Calibration Offset
+            if (this.calibrationOffsets[key]) {
+                const invCalibration = this.calibrationOffsets[key].clone().invert();
+                targetQ.multiply(invCalibration);
             }
+
+            // Reference Motion Engine Limits
+            const euler = new THREE.Euler().setFromQuaternion(targetQ, 'XYZ');
+            const deg = {
+                x: THREE.MathUtils.radToDeg(euler.x),
+                y: THREE.MathUtils.radToDeg(euler.y),
+                z: THREE.MathUtils.radToDeg(euler.z)
+            };
+            
+            // Apply constraints
+            const constrained = motionEngine.constrainRotation(boneName, deg);
+            
+            // Convert back
+            targetQ.setFromEuler(new THREE.Euler(
+                THREE.MathUtils.degToRad(constrained.x),
+                THREE.MathUtils.degToRad(constrained.y),
+                THREE.MathUtils.degToRad(constrained.z),
+                'XYZ'
+            ));
+            
+            // Store target for smoothing loop
+            this.targetBoneRotations.set(boneName, targetQ);
         }
     };
 
@@ -294,21 +405,16 @@ export class MotionCaptureManager {
     rigKeys.forEach(key => {
         const boneData = rig[key];
         if (key === 'Hips') {
-            rotateBone('Hips', boneData.rotation!);
-            
+            setTargetRotation('Hips', boneData.rotation!);
             // Apply Hips Position (Scaled down a bit to fit VRM world scale)
-            const node = this.vrm!.humanoid!.getNormalizedBoneNode('hips');
-            if (boneData.position && node) {
-                 // ... position logic ...
-            }
+            // Note: Hips position is harder to smooth without a reference, so we skip it or apply directly for now.
+            // For now, let's leave hips position as is or add it to a targetPosition map if needed.
         } else {
             if (boneData.rotation) {
-                rotateBone(key, boneData.rotation);
+                setTargetRotation(key, boneData.rotation);
             }
         }
     });
-    
-    this.vrm.humanoid.update();
   }
 
   private captureFrame() {
@@ -335,27 +441,31 @@ export class MotionCaptureManager {
   }
 
   private applyFaceRig(rig: any) {
-      if (!this.vrm?.expressionManager) return;
-
-      const em = this.vrm.expressionManager;
-      
-      // Helper function to find best matching expression and set it
-      // Prioritizes available blendshapes on the specific avatar
-      const setExpression = (candidates: string[], value: number) => {
-          const match = candidates.find(name => this.availableBlendshapes.has(name));
-          if (match) {
-              em.setValue(match, value);
-          }
+      // Helper function to set target weights
+      // It iterates through all candidates and sets whichever one exists
+      // This allows for simultaneous support of multiple standards (VRM 0.0, VRM 1.0, ARKit)
+      const setExpressionTarget = (candidates: string[], value: number) => {
+          candidates.forEach(name => {
+              if (this.availableBlendshapes.has(name)) {
+                  this.targetFaceValues.set(name, value);
+              }
+          });
       };
 
       // 1. Head Rotation
       if (rig.head) {
-          const headBone = this.vrm.humanoid?.getNormalizedBoneNode('head');
+          // Kalidokit separates head rotation from the rest of the body rig
+          // We need to apply it manually if we want head tracking
+          // The head bone is usually "neck" or "head" depending on rig, but Kalidokit gives us head rotation
+          const headBone = this.vrm?.humanoid?.getNormalizedBoneNode('head');
           if (headBone) {
-              const q = rig.head;
-              // Mix head rotation from pose and face for stability
-              const targetQ = new THREE.Quaternion(q.x, q.y, q.z, q.w);
-              headBone.quaternion.slerp(targetQ, 0.5); 
+             const q = rig.head; // {x, y, z, w}
+             // Create quaternion
+             const targetQ = new THREE.Quaternion(q.x, q.y, q.z, q.w);
+             
+             // Apply to target map for smoothing
+             // Note: 'head' matches VRM bone name
+             this.targetBoneRotations.set('head', targetQ);
           }
       }
 
@@ -364,12 +474,11 @@ export class MotionCaptureManager {
           const blinkL = 1 - rig.eye.l;
           const blinkR = 1 - rig.eye.r;
           
-          setExpression(['BlinkLeft', 'blink_l', 'eyeBlinkLeft', 'LeftEyeBlink'], blinkL);
-          setExpression(['BlinkRight', 'blink_r', 'eyeBlinkRight', 'RightEyeBlink'], blinkR);
+          setExpressionTarget(['BlinkLeft', 'blink_l', 'eyeBlinkLeft', 'LeftEyeBlink'], blinkL);
+          setExpressionTarget(['BlinkRight', 'blink_r', 'eyeBlinkRight', 'RightEyeBlink'], blinkR);
           
-          // Fallback/Sync for generic Blink
           const blinkMax = Math.max(blinkL, blinkR);
-          setExpression(['Blink', 'blink', 'eyeBlink'], blinkMax);
+          setExpressionTarget(['Blink', 'blink', 'eyeBlink'], blinkMax);
       }
 
       // 3. Pupils (LookAt)
@@ -377,48 +486,67 @@ export class MotionCaptureManager {
           const x = rig.pupil.x;
           const y = rig.pupil.y;
           
-          if (x > 0) {
-              setExpression(['LookLeft', 'lookLeft', 'eyeLookInLeft'], 0);
-              setExpression(['LookRight', 'lookRight', 'eyeLookInRight'], x);
-          } else {
-              setExpression(['LookRight', 'lookRight', 'eyeLookInRight'], 0);
-              setExpression(['LookLeft', 'lookLeft', 'eyeLookInLeft'], -x);
-          }
+          // Helper for ARKit asymmetric mapping
+          const setARKitGaze = (xVal: number, yVal: number) => {
+             // Look Right (+x) = Right Eye Out + Left Eye In
+             // Look Left (-x) = Right Eye In + Left Eye Out
+             
+             if (xVal > 0) { // Look Right
+                 setExpressionTarget(['eyeLookOutRight', 'LookRight'], xVal);
+                 setExpressionTarget(['eyeLookInLeft', 'LookLeft'], xVal);
+                 setExpressionTarget(['eyeLookInRight', 'LookLeft'], 0);
+                 setExpressionTarget(['eyeLookOutLeft', 'LookRight'], 0);
+             } else { // Look Left
+                 setExpressionTarget(['eyeLookInRight', 'LookLeft'], -xVal);
+                 setExpressionTarget(['eyeLookOutLeft', 'LookRight'], -xVal);
+                 setExpressionTarget(['eyeLookOutRight', 'LookRight'], 0);
+                 setExpressionTarget(['eyeLookInLeft', 'LookLeft'], 0);
+             }
+             
+             if (yVal > 0) { // Look Down
+                 setExpressionTarget(['eyeLookDownRight', 'LookDown'], yVal);
+                 setExpressionTarget(['eyeLookDownLeft', 'LookDown'], yVal);
+                 setExpressionTarget(['eyeLookUpRight', 'LookUp'], 0);
+                 setExpressionTarget(['eyeLookUpLeft', 'LookUp'], 0);
+             } else { // Look Up
+                 setExpressionTarget(['eyeLookUpRight', 'LookUp'], -yVal);
+                 setExpressionTarget(['eyeLookUpLeft', 'LookUp'], -yVal);
+                 setExpressionTarget(['eyeLookDownRight', 'LookDown'], 0);
+                 setExpressionTarget(['eyeLookDownLeft', 'LookDown'], 0);
+             }
+          };
           
-          if (y > 0) {
-              setExpression(['LookUp', 'lookUp', 'eyeLookUp'], 0);
-              setExpression(['LookDown', 'lookDown', 'eyeLookDown'], y);
-          } else {
-              setExpression(['LookDown', 'lookDown', 'eyeLookDown'], 0);
-              setExpression(['LookUp', 'lookUp', 'eyeLookUp'], -y);
-          }
+          setARKitGaze(x, y);
       }
 
       // 4. Mouth
       if (rig.mouth) {
           const shape = rig.mouth.shape; // { A, E, I, O, U }
           
-          // Standard Vowels
-          setExpression(['Aa', 'a', 'mouthOpen'], shape.A);
-          setExpression(['Ee', 'e'], shape.E);
-          setExpression(['Ih', 'i'], shape.I);
-          setExpression(['Oh', 'o', 'mouthPucker'], shape.O);
-          setExpression(['Ou', 'u', 'mouthFunnel'], shape.U);
+          setExpressionTarget(['Aa', 'a', 'mouthOpen'], shape.A);
+          setExpressionTarget(['Ee', 'e'], shape.E);
+          setExpressionTarget(['Ih', 'i'], shape.I);
+          setExpressionTarget(['Oh', 'o', 'mouthPucker'], shape.O);
+          setExpressionTarget(['Ou', 'u', 'mouthFunnel'], shape.U);
           
-          // Extra ARKit support if available (jawOpen is calculated by Kalidokit)
           if (rig.mouth.open !== undefined) {
-              setExpression(['jawOpen', 'mouthOpen', 'A'], rig.mouth.open);
+              setExpressionTarget(['jawOpen', 'mouthOpen', 'A'], rig.mouth.open);
           }
       }
       
-      // 5. Brows
+      // 5. Smiling (Custom)
+      if (rig.smile !== undefined) {
+          const smile = rig.smile;
+          // Map to standard VRM and ARKit smile shapes
+          setExpressionTarget(['Joy', 'joy', 'Happy', 'happy', 'Fun', 'fun'], smile);
+          setExpressionTarget(['mouthSmileLeft', 'mouthSmileRight'], smile);
+          setExpressionTarget(['mouthSmile'], smile);
+      }
+      
+      // 6. Brows
       if (rig.brow) {
           const browValue = rig.brow;
-          // Priority: ARKit browInnerUp > Surprised
-          // Note: "Surprised" often includes mouth, so we prioritize brow-specific shapes
-          setExpression(['browInnerUp', 'BrowsUp', 'browOuterUpLeft', 'browOuterUpRight', 'Surprised', 'surprise'], browValue);
+          setExpressionTarget(['browInnerUp', 'BrowsUp', 'browOuterUpLeft', 'browOuterUpRight', 'Surprised', 'surprise'], browValue);
       }
-
-      em.update();
   }
 }
