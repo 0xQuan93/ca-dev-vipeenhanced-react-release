@@ -2,6 +2,27 @@
 
 All notable changes to the Project 89 Reaction Forge will be documented in this file.
 
+## [1.1.0] - 2025-12-18
+
+### 🌟 Major Improvements
+- **Motion Capture v2.0**:
+  - **Smoothing Engine**: New interpolation system for jitter-free face and body tracking.
+  - **Rotation Constraints**: Natural bone limits prevent impossible joints.
+  - **Enhanced Smile Detection**: Custom MediaPipe landmark calculation for responsive smiling.
+  - **ARKit Integration**: Better mapping for standard ARKit blendshapes.
+- **Green Screen Support**: 
+  - New "Green Screen" background option for easy chroma keying.
+  - Dedicated toggle in Mocap tab.
+- **Interactive Tutorial**:
+  - Step-by-step onboarding overlay for new users.
+  - Highlights key UI elements (Load Avatar, Modes, Tools).
+
+### ✨ Enhancements
+- **Dynamic Blendshapes**: Mocap system now auto-detects avatar capabilities.
+- **Performance**: Optimized render loop for tracking updates.
+
+---
+
 ## [1.0.0] - 2025-12-01
 
 ### 🎉 Initial Release

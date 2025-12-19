@@ -110,8 +110,6 @@ export function ReactionPanel() {
       return;
     }
 
-    // console.log('[ReactionPanel] Applying custom pose:', poseData);
-
     try {
       // Apply the raw VRM pose data directly to avatarManager
       await avatarManager.applyRawPose(poseData, animationMode);

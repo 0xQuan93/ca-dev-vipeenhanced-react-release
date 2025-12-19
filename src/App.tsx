@@ -9,8 +9,6 @@ import { useUIStore } from './state/useUIStore';
 function App() {
   const { mode, setMode, mobileDrawerOpen, setMobileDrawerOpen } = useUIStore();
 
-  console.log('[App] Rendering App component, mode:', mode);
-
   return (
     <div className="app-shell">
       <AppHeader mode={mode} onModeChange={setMode} />

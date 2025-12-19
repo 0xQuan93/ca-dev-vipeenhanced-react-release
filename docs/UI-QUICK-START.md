@@ -45,6 +45,11 @@ npm run dev
 
 ## 🎨 Quick Actions
 
+### 🎓 Start Interactive Tutorial
+1. Click the **"?"** or **"Tutorial"** button in the header (if available).
+2. Follow the step-by-step overlay guide to learn the interface.
+3. Great for first-time users!
+
 ### Load an Avatar
 1. Click **"Load VRM Avatar"** in header
 2. Select a `.vrm` file
@@ -64,7 +69,8 @@ npm run dev
 ### Change Background
 1. Go to **Scene** tab
 2. Click any background thumbnail
-3. Background changes in real-time
+3. Use **Green Screen** for chroma keying
+4. Background changes in real-time
 
 ### Export Your Work
 1. Go to **Export** tab
@@ -163,6 +169,7 @@ On screens < 960px wide:
 6. **Signal Breach** - Red alert theme
 7. **Quantum Field** - Purple quantum effect
 8. **Protocol Dawn** - Blue dawn gradient
+9. **Green Screen** - Pure green (#00FF00) for chroma keying
 
 ---
 
