@@ -68,7 +68,7 @@ class AvatarManager {
     this.isInteracting = interacting;
     // If interacting, we pause the animation mixer logic to allow manual overrides
     if (interacting) {
-        console.log('[AvatarManager] Interaction started - Pausing mixer updates');
+        console.log('[AvatarManager] Interaction/Mocap started - Pausing mixer updates');
     } else {
         console.log('[AvatarManager] Interaction ended - Resuming mixer updates');
     }

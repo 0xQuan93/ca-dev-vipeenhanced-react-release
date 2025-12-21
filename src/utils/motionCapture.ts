@@ -196,6 +196,8 @@ export class MotionCaptureManager {
       // updates (which happen in AvatarManager's tick) are not overwritten by our lack of body updates here.
       // Since we only touched head/neck bones in Face Mode, the body bones remain under control of the AnimationMixer.
       // However, vrm.humanoid.update() might re-solve constraints.
+      //
+      // If full body mode, we rely on the fact that we froze the animation mixer via AvatarManager.
   }
 
   startRecording() {

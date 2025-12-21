@@ -62,10 +62,14 @@ export function MocapTab() {
           } else {
              addToast("Switched to Face Only (Keeping Animation)", "info");
           }
+          // Resume animation mixer for body movement
+          avatarManager.setInteraction(false);
       } else {
           // Switching back to Full Body
           // We should freeze the animation so the body doesn't fight the mocap
           avatarManager.freezeCurrentPose();
+          // Pause animation mixer so mocap has full control
+          avatarManager.setInteraction(true);
           addToast("Switched to Full Body mode (Animation Frozen)", "info");
       }
   };
@@ -115,6 +119,8 @@ export function MocapTab() {
     if (isActive) {
         managerRef.current.stop();
         setIsActive(false);
+        // Resume normal behavior when stopping camera
+        avatarManager.setInteraction(false);
     } else {
         const vrm = avatarManager.getVRM();
         if (!vrm) {
@@ -134,11 +140,15 @@ export function MocapTab() {
             // Freeze the current pose instead of resetting to T-pose
             // This prevents the avatar from snapping to T-pose while the camera initializes
             avatarManager.freezeCurrentPose();
+            // Flag interaction to pause mixer
+            avatarManager.setInteraction(true);
             } else {
                  // Ensure we are playing something if idle
                  if (!avatarManager.isAnimationPlaying()) {
                      avatarManager.applyPose('sunset-call', true, 'loop');
                  }
+                 // Ensure interaction is off so mixer runs
+                 avatarManager.setInteraction(false);
             }
             
             managerRef.current.setVRM(vrm);
