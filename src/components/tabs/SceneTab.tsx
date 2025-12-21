@@ -1,3 +1,4 @@
+import { usePopOutViewport } from '../../hooks/usePopOutViewport';
 import { useState, useEffect, useRef } from 'react';
 import { sceneManager } from '../../three/sceneManager';
 import { backgroundOptions } from '../../three/backgrounds';
@@ -18,6 +19,7 @@ export function SceneTab() {
   const [cssOverlay, setCssOverlay] = useState<string | null>(null);
   const [showLogo, setShowLogo] = useState(true);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
+  const { isPoppedOut, togglePopOut } = usePopOutViewport(cssOverlay);
   const vrmInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
   const overlayInputRef = useRef<HTMLInputElement>(null);
@@ -319,6 +321,17 @@ export function SceneTab() {
             9:16
           </button>
         </div>
+      </div>
+
+      <div className="tab-section">
+        <h3>Viewport</h3>
+        <p className="muted small">Pop out the viewport to a separate window</p>
+        <button 
+          className={isPoppedOut ? 'secondary active full-width' : 'secondary full-width'}
+          onClick={togglePopOut}
+        >
+          {isPoppedOut ? '🔙 Restore Viewport' : '↗️ Pop Out Viewport'}
+        </button>
       </div>
     </div>
   );
