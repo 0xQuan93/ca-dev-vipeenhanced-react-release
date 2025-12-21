@@ -154,7 +154,14 @@ export class MotionCaptureManager {
       // 1. Smooth Facial Expressions
       this.targetFaceValues.forEach((targetVal, name) => {
           const currentVal = this.currentFaceValues.get(name) || 0;
-          const newVal = THREE.MathUtils.lerp(currentVal, targetVal, lerpFactor);
+          
+          // Dynamic smoothing: Eyes need to be snappier, Mouth/Face smoother
+          let localLerp = lerpFactor;
+          if (name.toLowerCase().includes('eye') || name.toLowerCase().includes('blink') || name.toLowerCase().includes('look')) {
+              localLerp = 0.4; // Faster eyes (less lag)
+          }
+          
+          const newVal = THREE.MathUtils.lerp(currentVal, targetVal, localLerp);
           this.currentFaceValues.set(name, newVal);
           
           if (Math.abs(newVal - currentVal) > 0.001) {
