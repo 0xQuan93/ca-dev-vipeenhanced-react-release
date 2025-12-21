@@ -27,6 +27,8 @@ export class MotionCaptureManager {
   private targetFaceValues: Map<string, number> = new Map();
   private currentFaceValues: Map<string, number> = new Map();
   private targetBoneRotations: Map<string, THREE.Quaternion> = new Map();
+  // Store smoothed rotation state internally to prevent loop jolts
+  private currentBoneRotations: Map<string, THREE.Quaternion> = new Map(); 
   private targetRootPosition: THREE.Vector3 | null = null;
   private currentRootPosition: THREE.Vector3 = new THREE.Vector3();
   private updateLoopId: number | null = null;
@@ -171,11 +173,24 @@ export class MotionCaptureManager {
           // @ts-ignore
           const node = this.vrm!.humanoid!.getNormalizedBoneNode(boneName);
           if (node) {
-              // Ensure we are slerping from the CURRENT node state
-              // If the animation mixer was just stopped, freezeCurrentPose should have populated 'node.quaternion'
-              // with the last frame. If not, it might have reset.
-              // Slerp to target.
-              node.quaternion.slerp(targetQ, lerpFactor);
+              // STATE ISOLATION FIX:
+              // Instead of slerping from the node's current rotation (which is reset by animation loops),
+              // we slerp from our internal 'currentBoneRotations' state.
+              // This ensures the motion capture path remains smooth regardless of what the animation mixer does.
+              
+              // 1. Get or Init current smoothed rotation
+              let currentQ = this.currentBoneRotations.get(boneName);
+              if (!currentQ) {
+                  // Initialize from current node state if first time
+                  currentQ = node.quaternion.clone();
+                  this.currentBoneRotations.set(boneName, currentQ);
+              }
+              
+              // 2. Slerp internal state towards target
+              currentQ.slerp(targetQ, lerpFactor);
+              
+              // 3. Apply to Scene Node (Overwriting animation mixer for this frame)
+              node.quaternion.copy(currentQ);
           }
       });
 
