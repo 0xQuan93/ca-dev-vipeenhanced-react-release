@@ -131,9 +131,9 @@ export function MocapTab() {
             // In Face Only mode, we WANT the animation to keep playing.
             // In Full Body mode, we want to freeze so we can take over.
             if (mocapMode === 'full') {
-                 // Freeze the current pose instead of resetting to T-pose
-                 // This prevents the avatar from snapping to T-pose while the camera initializes
-                 avatarManager.freezeCurrentPose();
+            // Freeze the current pose instead of resetting to T-pose
+            // This prevents the avatar from snapping to T-pose while the camera initializes
+            avatarManager.freezeCurrentPose();
             } else {
                  // Ensure we are playing something if idle
                  if (!avatarManager.isAnimationPlaying()) {

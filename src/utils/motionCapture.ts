@@ -294,19 +294,19 @@ export class MotionCaptureManager {
     // 3. Solve Pose using Kalidokit
     // Only solve/apply pose if in full body mode
     if (this.mode === 'full') {
-        const poseWorldLandmarks = (results as any).poseWorldLandmarks || (results as any).ea;
-        
-        if (results.poseLandmarks && results.poseLandmarks.length >= 33) {
-            try {
-                const poseRig = Kalidokit.Pose.solve(results.poseLandmarks, poseWorldLandmarks, {
-                    runtime: 'mediapipe',
-                    video: this.videoElement
-                });
-                if (poseRig) {
-                    this.applyPoseRig(poseRig);
-                }
-            } catch (error) {
-                console.warn("[MotionCapture] Pose solver error:", error);
+    const poseWorldLandmarks = (results as any).poseWorldLandmarks || (results as any).ea;
+    
+    if (results.poseLandmarks && results.poseLandmarks.length >= 33) {
+        try {
+            const poseRig = Kalidokit.Pose.solve(results.poseLandmarks, poseWorldLandmarks, {
+                runtime: 'mediapipe',
+                video: this.videoElement
+            });
+            if (poseRig) {
+                this.applyPoseRig(poseRig);
+            }
+        } catch (error) {
+            console.warn("[MotionCapture] Pose solver error:", error);
             }
         }
     }
