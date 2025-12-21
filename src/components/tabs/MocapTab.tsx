@@ -54,23 +54,32 @@ export function MocapTab() {
       }
       
       if (mode === 'face') {
-          // Instead of resetting to T-pose, play a default animation (loop)
-          // Ideally "Sunset Call" as requested, or keep current if playing.
+          // In Face mode, we want the animation mixer to continue running
+          // so the body can play idle animations (like Sunset Call).
+          // However, we should NOT force a specific animation if the user
+          // has already chosen one.
+          
           if (!avatarManager.isAnimationPlaying()) {
+             // Only apply default if nothing is playing
              avatarManager.applyPose('sunset-call', true, 'loop');
-             addToast("Switched to Face Only (Default: Sunset Call)", "info");
+             addToast("Face Mode: Playing Default Idle (Sunset Call)", "info");
           } else {
-             addToast("Switched to Face Only (Keeping Animation)", "info");
+             // Keep existing animation
+             addToast("Face Mode: Keeping Current Animation", "info");
           }
+          
           // Resume animation mixer for body movement
           avatarManager.setInteraction(false);
+          
       } else {
           // Switching back to Full Body
-          // We should freeze the animation so the body doesn't fight the mocap
+          // We MUST freeze the animation so the body doesn't fight the mocap.
+          // The mixer would otherwise overwrite our arm/leg movements.
           avatarManager.freezeCurrentPose();
+          
           // Pause animation mixer so mocap has full control
           avatarManager.setInteraction(true);
-          addToast("Switched to Full Body mode (Animation Frozen)", "info");
+          addToast("Full Body Mode: Animation Frozen for Tracking", "info");
       }
   };
 
@@ -143,12 +152,14 @@ export function MocapTab() {
             // Flag interaction to pause mixer
             avatarManager.setInteraction(true);
             } else {
-                 // Ensure we are playing something if idle
+                 // Face Mode: Ensure interaction is OFF so mixer runs
+                 avatarManager.setInteraction(false);
+                 
+                 // If no animation is playing, apply the default 'sunset-call'
+                 // But only if we aren't already playing something
                  if (!avatarManager.isAnimationPlaying()) {
                      avatarManager.applyPose('sunset-call', true, 'loop');
                  }
-                 // Ensure interaction is off so mixer runs
-                 avatarManager.setInteraction(false);
             }
             
             managerRef.current.setVRM(vrm);

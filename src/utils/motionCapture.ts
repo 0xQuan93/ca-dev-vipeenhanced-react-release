@@ -202,6 +202,9 @@ export class MotionCaptureManager {
       // However, vrm.humanoid.update() might re-solve constraints.
       //
       // If full body mode, we rely on the fact that we froze the animation mixer via AvatarManager.
+      // 
+      // NOTE: If the user stops the camera but we are in Face Mode, the animation should continue.
+      // The update loop here stops when camera stops.
   }
 
   startRecording() {
