@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Remove or comment out the extensions block if it exists
+# [[extensions]]
+#   package = "netlify-plugin-..." 
