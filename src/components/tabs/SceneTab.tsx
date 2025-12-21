@@ -112,7 +112,6 @@ export function SceneTab() {
               div.style.left = '0';
               div.style.width = '100%';
               div.style.height = '100%';
-              div.style.borderRadius = '15px'; // Match CSS
               div.style.pointerEvents = 'none';
               
               viewport.appendChild(div);

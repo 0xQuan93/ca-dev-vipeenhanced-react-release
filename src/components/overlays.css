@@ -11,7 +11,48 @@
   mix-blend-mode: color-dodge;
   animation: glitch-anim 2.5s infinite;
   overflow: hidden;
-  border-radius: 15px; /* Slightly less than 16px to prevent subpixel bleed */
+}
+
+@keyframes glitch-anim {
+  0% {
+    transform: translate(0, 0);
+    filter: hue-rotate(0deg);
+    opacity: 0;
+  }
+  2% {
+    transform: translate(-5px, 2px);
+    filter: hue-rotate(90deg);
+    background: rgba(255, 0, 0, 0.1);
+    opacity: 1;
+  }
+  4% {
+    transform: translate(5px, -2px);
+    filter: hue-rotate(180deg);
+    background: rgba(0, 255, 255, 0.1);
+    opacity: 1;
+  }
+  6% {
+    transform: translate(0, 0);
+    filter: hue-rotate(0deg);
+    opacity: 0;
+  }
+  /* Random sporadic glitches */
+  50% { opacity: 0; }
+  51% { 
+    transform: scale(1.02);
+    filter: invert(1);
+    opacity: 0.8;
+  }
+  52% { opacity: 0; }
+  
+  /* Hard flicker */
+  85% { opacity: 0; }
+  86% {
+    background: rgba(0, 255, 0, 0.1); 
+    transform: skewX(10deg);
+    opacity: 1; 
+  }
+  87% { opacity: 0; }
 }
 
 .overlay-scanlines {
@@ -32,7 +73,6 @@
   z-index: 11;
   opacity: 0.6;
   overflow: hidden;
-  border-radius: 15px;
 }
 
 .overlay-vignette {
@@ -46,7 +86,6 @@
   z-index: 12;
   opacity: 0.8;
   overflow: hidden;
-  border-radius: 15px;
 }
 
 .overlay-crt {
@@ -60,7 +99,6 @@
   z-index: 13;
   animation: flicker 0.15s infinite;
   overflow: hidden;
-  border-radius: 15px;
 }
 
 @keyframes flicker {
