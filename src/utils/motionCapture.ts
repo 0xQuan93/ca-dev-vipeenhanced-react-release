@@ -188,7 +188,13 @@ export class MotionCaptureManager {
               }
               
               // 2. Slerp internal state towards target
-              currentQ.slerp(targetQ, lerpFactor);
+              // For Head bone specifically, use a higher smoothing factor (lower lerp)
+              let effectiveLerp = lerpFactor;
+              if (boneName.toLowerCase().includes('head')) {
+                  effectiveLerp = 0.1; // Extra smooth for head (vs 0.16)
+              }
+              
+              currentQ.slerp(targetQ, effectiveLerp);
               
               // 3. Apply to Scene Node (Overwriting animation mixer for this frame)
               node.quaternion.copy(currentQ);
@@ -514,31 +520,37 @@ export class MotionCaptureManager {
           // Kalidokit separates head rotation from the rest of the body rig
           // We need to apply it manually if we want head tracking
           // The head bone is usually "neck" or "head" depending on rig, but Kalidokit gives us head rotation
-          const headBone = this.vrm?.humanoid?.getNormalizedBoneNode('head');
-          if (headBone) {
-             const q = rig.head; // {x, y, z, w}
-             // Create quaternion
-             const headQ = new THREE.Quaternion(q.x, q.y, q.z, q.w);
-             
-             // Apply to target map for smoothing
-             this.targetBoneRotations.set('head', headQ);
+             const headBone = this.vrm?.humanoid?.getNormalizedBoneNode('head');
+             if (headBone) {
+                const q = rig.head; // {x, y, z, w}
+                // Create quaternion
+                const headQ = new THREE.Quaternion(q.x, q.y, q.z, q.w);
+                
+                // Dampen the head rotation amplitude by 30% to reduce sensitivity
+                // Slerp towards identity (no rotation) by 30% (t=0.7 keeps 70% of rotation)
+                const identityQ = new THREE.Quaternion();
+                headQ.slerp(identityQ, 0.3);
 
-             // --- Derived Upper Body Movement (Face Mode Only) ---
-             // If we are in Face mode, we want the body to subtly follow the head
-             if (this.mode === 'face') {
-                 // Dampen the rotation for the neck (e.g. 50% of head rotation)
-                 const neckQ = new THREE.Quaternion().slerp(headQ, 0.5);
-                 this.targetBoneRotations.set('neck', neckQ);
+                // Apply to target map for smoothing
+                this.targetBoneRotations.set('head', headQ);
 
-                 // Dampen further for chest/spine (e.g. 20% of head rotation)
-                 const chestQ = new THREE.Quaternion().slerp(headQ, 0.2);
-                 this.targetBoneRotations.set('chest', chestQ);
-                 this.targetBoneRotations.set('upperChest', chestQ);
-                 
-                 const spineQ = new THREE.Quaternion().slerp(headQ, 0.1);
-                 this.targetBoneRotations.set('spine', spineQ);
+                // --- Derived Upper Body Movement (Face Mode Only) ---
+                // If we are in Face mode, we want the body to subtly follow the head
+                if (this.mode === 'face') {
+                    // Dampen the rotation for the neck (e.g. 50% of head rotation)
+                    // Note: headQ is already dampened above, so these are relative to that
+                    const neckQ = new THREE.Quaternion().slerp(headQ, 0.5);
+                    this.targetBoneRotations.set('neck', neckQ);
+
+                    // Dampen further for chest/spine (e.g. 20% of head rotation)
+                    const chestQ = new THREE.Quaternion().slerp(headQ, 0.2);
+                    this.targetBoneRotations.set('chest', chestQ);
+                    this.targetBoneRotations.set('upperChest', chestQ);
+                    
+                    const spineQ = new THREE.Quaternion().slerp(headQ, 0.1);
+                    this.targetBoneRotations.set('spine', spineQ);
+                }
              }
-          }
       }
 
       // 2. Eyes (Blink)
