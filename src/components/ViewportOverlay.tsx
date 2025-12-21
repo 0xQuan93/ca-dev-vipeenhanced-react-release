@@ -1,5 +1,8 @@
 import { sceneManager } from '../three/sceneManager';
 
+import { usePopOutViewport } from '../hooks/usePopOutViewport';
+import { useUIStore } from '../state/useUIStore';
+
 interface ViewportOverlayProps {
   mode: 'reactions' | 'poselab';
   isPlaying?: boolean;
@@ -8,6 +11,9 @@ interface ViewportOverlayProps {
 }
 
 export function ViewportOverlay({ mode, isPlaying, onPlayPause, onStop }: ViewportOverlayProps) {
+  const { activeCssOverlay } = useUIStore();
+  const { isPoppedOut, togglePopOut } = usePopOutViewport(activeCssOverlay);
+
   const handleResetCamera = () => {
     sceneManager.resetCamera();
   };
@@ -56,6 +62,16 @@ export function ViewportOverlay({ mode, isPlaying, onPlayPause, onStop }: Viewpo
             title="Side view"
           >
             👁️
+          </button>
+          
+          {/* Pop Out Toggle */}
+          <button
+            className={`icon-button ${isPoppedOut ? 'active' : ''}`}
+            onClick={togglePopOut}
+            title={isPoppedOut ? "Restore viewport" : "Pop out viewport"}
+            style={{ marginLeft: '0.5rem', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '0.5rem' }}
+          >
+            {isPoppedOut ? '🔙' : '↗️'}
           </button>
         </div>
       </div>
