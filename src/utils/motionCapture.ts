@@ -148,7 +148,8 @@ export class MotionCaptureManager {
   private updateFrame() {
       if (!this.vrm || !this.vrm.humanoid || !this.vrm.expressionManager) return;
       
-      const lerpFactor = 0.25; // Adjust for smoothness vs responsiveness
+      // Increased smoothing by ~35% (0.25 -> 0.16) to prevent violent jolts
+      const lerpFactor = 0.16; 
       
       // 1. Smooth Facial Expressions
       this.targetFaceValues.forEach((targetVal, name) => {
