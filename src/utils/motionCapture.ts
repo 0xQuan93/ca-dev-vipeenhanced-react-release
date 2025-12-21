@@ -27,6 +27,8 @@ export class MotionCaptureManager {
   private targetFaceValues: Map<string, number> = new Map();
   private currentFaceValues: Map<string, number> = new Map();
   private targetBoneRotations: Map<string, THREE.Quaternion> = new Map();
+  private targetRootPosition: THREE.Vector3 | null = null;
+  private currentRootPosition: THREE.Vector3 = new THREE.Vector3();
   private updateLoopId: number | null = null;
   
   // Recording State
@@ -160,10 +162,10 @@ export class MotionCaptureManager {
       
       // 2. Smooth Bone Rotations
       this.targetBoneRotations.forEach((targetQ, boneName) => {
-          // In Face mode, only allow Head/Neck bones
+          // In Face mode, allow Head, Neck, and Upper Body bones for natural movement
           if (this.mode === 'face') {
-              const isHeadBone = boneName.toLowerCase().includes('head') || boneName.toLowerCase().includes('neck');
-              if (!isHeadBone) return;
+              const allowedBones = ['head', 'neck', 'chest', 'upperchest', 'spine'];
+              if (!allowedBones.some(b => boneName.toLowerCase().includes(b))) return;
           }
 
           // @ts-ignore
@@ -172,6 +174,16 @@ export class MotionCaptureManager {
               node.quaternion.slerp(targetQ, lerpFactor);
           }
       });
+
+      // 3. Smooth Root Position (Full Body Only)
+      if (this.mode === 'full' && this.targetRootPosition) {
+          const hips = this.vrm.humanoid.getNormalizedBoneNode('hips');
+          if (hips) {
+              this.currentRootPosition.lerp(this.targetRootPosition, lerpFactor);
+              // Apply to hips - Note: VRM0.0/1.0 differences might apply, but usually modifying the node directly works
+              hips.position.copy(this.currentRootPosition);
+          }
+      }
       
       // Only update if we are not recording (recording handles its own update/capture)
       // Actually we should always update visual model
@@ -414,9 +426,21 @@ export class MotionCaptureManager {
         const boneData = rig[key];
         if (key === 'Hips') {
             setTargetRotation('Hips', boneData.rotation!);
-            // Apply Hips Position (Scaled down a bit to fit VRM world scale)
-            // Note: Hips position is harder to smooth without a reference, so we skip it or apply directly for now.
-            // For now, let's leave hips position as is or add it to a targetPosition map if needed.
+            
+            // Apply Hips Position
+            // Kalidokit returns position normalized -1 to 1 usually, or scaled.
+            // We need to scale it to be visible but not extreme.
+            // Position z is crucial for depth.
+            if (boneData.position) {
+                const pos = boneData.position;
+                // Create target vector. Scale factors are experimental.
+                // VRM is approx 1.7m tall.
+                this.targetRootPosition = new THREE.Vector3(
+                    pos.x * 0.5, // Horizontal movement
+                    pos.y * 0.5 + 1.0, // Vertical movement + offset to keep feet on ground approx
+                    pos.z * 0.5  // Depth movement
+                );
+            }
         } else {
             if (boneData.rotation) {
                 setTargetRotation(key, boneData.rotation);
@@ -469,11 +493,26 @@ export class MotionCaptureManager {
           if (headBone) {
              const q = rig.head; // {x, y, z, w}
              // Create quaternion
-             const targetQ = new THREE.Quaternion(q.x, q.y, q.z, q.w);
+             const headQ = new THREE.Quaternion(q.x, q.y, q.z, q.w);
              
              // Apply to target map for smoothing
-             // Note: 'head' matches VRM bone name
-             this.targetBoneRotations.set('head', targetQ);
+             this.targetBoneRotations.set('head', headQ);
+
+             // --- Derived Upper Body Movement (Face Mode Only) ---
+             // If we are in Face mode, we want the body to subtly follow the head
+             if (this.mode === 'face') {
+                 // Dampen the rotation for the neck (e.g. 50% of head rotation)
+                 const neckQ = new THREE.Quaternion().slerp(headQ, 0.5);
+                 this.targetBoneRotations.set('neck', neckQ);
+
+                 // Dampen further for chest/spine (e.g. 20% of head rotation)
+                 const chestQ = new THREE.Quaternion().slerp(headQ, 0.2);
+                 this.targetBoneRotations.set('chest', chestQ);
+                 this.targetBoneRotations.set('upperChest', chestQ);
+                 
+                 const spineQ = new THREE.Quaternion().slerp(headQ, 0.1);
+                 this.targetBoneRotations.set('spine', spineQ);
+             }
           }
       }
 
